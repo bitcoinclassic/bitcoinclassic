@@ -11,6 +11,7 @@
 #include "primitives/transaction.h"
 #include "script/script.h"
 #include "script/sign.h"
+#include "ui_interface.h" // for _(...)
 #include "univalue/univalue.h"
 #include "util.h"
 #include "utilmoneystr.h"
@@ -25,6 +26,7 @@ using namespace std;
 
 static bool fCreateBlank;
 static map<string,UniValue> registers;
+CClientUIInterface uiInterface;
 
 static bool AppInitRawTx(int argc, char* argv[])
 {
@@ -187,7 +189,7 @@ static void MutateTxAddInput(CMutableTransaction& tx, const string& strInput)
     uint256 txid(uint256S(strTxid));
 
     static const unsigned int minTxOutSz = 9;
-    static const unsigned int maxVout = MAX_BLOCK_SIZE / minTxOutSz;
+    static const unsigned int maxVout = MaxBlockSize(std::numeric_limits<uint64_t>::max())/ minTxOutSz;
 
     // extract and validate vout
     string strVout = strInput.substr(pos + 1, string::npos);
@@ -442,18 +444,9 @@ static void MutateTxSign(CMutableTransaction& tx, const string& flagStr)
     tx = mergedTx;
 }
 
-class Secp256k1Init
-{
-public:
-    Secp256k1Init() { ECC_Start(); }
-    ~Secp256k1Init() { ECC_Stop(); }
-};
-
 static void MutateTx(CMutableTransaction& tx, const string& command,
                      const string& commandVal)
 {
-    boost::scoped_ptr<Secp256k1Init> ecc;
-
     if (command == "nversion")
         MutateTxVersion(tx, commandVal);
     else if (command == "locktime")
@@ -471,10 +464,8 @@ static void MutateTx(CMutableTransaction& tx, const string& command,
     else if (command == "outscript")
         MutateTxAddOutScript(tx, commandVal);
 
-    else if (command == "sign") {
-        if (!ecc) { ecc.reset(new Secp256k1Init()); }
+    else if (command == "sign")
         MutateTxSign(tx, commandVal);
-    }
 
     else if (command == "load")
         RegisterLoad(commandVal);
