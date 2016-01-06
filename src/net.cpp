@@ -1615,7 +1615,7 @@ void ThreadOpenConnections()
             // find out afterwords that what we thought was a node's nServices
             // was incorrect; Bitcoin Core will even stay connected to nodes
             // not advertising NODE_NETWORK in this case.
-            if (!((addr.nServices & NODE_RELAYS_DOUBLESPENDS) && (addr.nServices & ~NODE_RELAYS_DOUBLESPENDS) == NODE_NETWORK)
+            if (!((addr.nServices & ~NODE_BLOOM) == (NODE_NETWORK | NODE_RELAYS_DOUBLESPENDS))
                     && (nOutbound - nDoubleSpendRelayingOutbound >= MAX_STD_OUTBOUND_CONNECTIONS))
                 continue;
 
