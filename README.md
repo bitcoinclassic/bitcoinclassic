@@ -1,7 +1,7 @@
-Bitcoin Core integration/staging tree
+Bitcoin Core - Figure It Out 
 =====================================
 
-[![Build Status](https://travis-ci.org/bitcoin/bitcoin.svg?branch=master)](https://travis-ci.org/bitcoin/bitcoin)
+[![Build Status](https://travis-ci.org/bitcoin/bitcoin.svg?branch=bitcoin-fio)](https://travis-ci.org/bitcoin/bitcoin)
 
 https://www.bitcoin.org
 
@@ -16,6 +16,11 @@ software which enables the use of this currency.
 
 For more information, as well as an immediately useable, binary version of
 the Bitcoin Core software, see https://www.bitcoin.org/en/download.
+
+What is Bitcoin - Figure It Out?
+--------------------------------
+
+Bitcoin - Figure It out is an aggressive fork of the bitcoin network designed to increase the blocksize limits in a very conservative way. Recently there has been several disagreements about which BIP to implement in regards to blocksize. BIP 101 vs. BIP 100. Both of these BIPs introduce larger blocksize limits but require consensus of the network. Getting consensus is very difficult on the bitcoin network. Pools control consensus and the idea is that miners will flock to whichever pool they think is implementing the best solution. I think that this ideology is flawed. I do not have a better idea, and I think that this idea is currently the best we have. Bitcoin-fio is an alternate way to gain consensus. Bitcoin-fio is a bitcoin core - based client which starts accepting 2mb block immediately. The idea is to give us more time to decide how blocksize-increase should be handled. A majority of core dev and the community agree that we need to increase blocksize, the disagreement is over how much to increase and when. I have attempted to extend the duration of time we have available to make these important decisions. This is not a permanent solution by any means. I believe a majority of the bitcoin ecosystem believes that increasing the blocksize by a very small amount would be beneficial to bitcoin as a whole and would give us more time to sort things out. I have based this client on that belief.
 
 License
 -------
