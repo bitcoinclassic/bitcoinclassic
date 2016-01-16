@@ -43,7 +43,7 @@ static leveldb::Options GetOptions(size_t nCacheSize)
     return options;
 }
 
-CLevelDBWrapper::CLevelDBWrapper(const boost::filesystem::path& path, size_t nCacheSize, bool fMemory, bool fWipe)
+CLevelDBWrapper::CLevelDBWrapper(const boost::filesystem::path& path, size_t nCacheSize, bool &isObfuscated, bool fMemory, bool fWipe)
 {
     penv = NULL;
     readoptions.verify_checksums = true;
@@ -58,7 +58,8 @@ CLevelDBWrapper::CLevelDBWrapper(const boost::filesystem::path& path, size_t nCa
     } else {
         if (fWipe) {
             LogPrintf("Wiping LevelDB in %s\n", path.string());
-            leveldb::DestroyDB(path.string(), options);
+            leveldb::Status result = leveldb::DestroyDB(path.string(), options);
+            HandleError(result);
         }
         TryCreateDirectory(path);
         LogPrintf("Opening LevelDB in %s\n", path.string());
@@ -66,6 +67,9 @@ CLevelDBWrapper::CLevelDBWrapper(const boost::filesystem::path& path, size_t nCa
     leveldb::Status status = leveldb::DB::Open(options, path.string(), &pdb);
     HandleError(status);
     LogPrintf("Opened LevelDB successfully\n");
+
+    std::vector<unsigned char> obfuscate_key;
+    isObfuscated = Read(OBFUSCATE_KEY_KEY, obfuscate_key);
 }
 
 CLevelDBWrapper::~CLevelDBWrapper()
@@ -86,3 +90,6 @@ bool CLevelDBWrapper::WriteBatch(CLevelDBBatch& batch, bool fSync) throw(leveldb
     HandleError(status);
     return true;
 }
+
+// Taken from future release of DBWrapper
+const std::string CLevelDBWrapper::OBFUSCATE_KEY_KEY("\000obfuscate_key", 14);

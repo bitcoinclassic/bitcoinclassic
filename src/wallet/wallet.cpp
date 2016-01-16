@@ -34,7 +34,7 @@ CAmount maxTxFee = DEFAULT_TRANSACTION_MAXFEE;
 unsigned int nTxConfirmTarget = DEFAULT_TX_CONFIRM_TARGET;
 bool bSpendZeroConfChange = true;
 bool fSendFreeTransactions = false;
-bool fPayAtLeastCustomFee = true;
+bool fPayAtLeastCustomFee = false;
 
 /**
  * Fees smaller than this (in satoshi) are considered zero fee (for transaction creation)
@@ -2001,7 +2001,7 @@ bool CWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
             if (!wtxNew.AcceptToMemoryPool(false))
             {
                 // This must not fail. The transaction has already been signed and recorded.
-                LogPrintf("CommitTransaction(): Error: Transaction not valid");
+                LogPrintf("CommitTransaction(): Error: Transaction not valid\n");
                 return false;
             }
             wtxNew.RelayWalletTransaction();

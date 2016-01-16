@@ -349,7 +349,7 @@ static bool Socks5(const std::string& strDest, int port, const ProxyCredentials 
         }
         if (pchRetA[0] != 0x01 || pchRetA[1] != 0x00) {
             CloseSocket(hSocket);
-            return error("Proxy authentication unsuccesful");
+            return error("Proxy authentication unsuccessful");
         }
     } else if (pchRet1[1] == 0x00) {
         // Perform no authentication
@@ -444,10 +444,17 @@ bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRe
     if (hSocket == INVALID_SOCKET)
         return false;
 
-#ifdef SO_NOSIGPIPE
     int set = 1;
+#ifdef SO_NOSIGPIPE
     // Different way of disabling SIGPIPE on BSD
     setsockopt(hSocket, SOL_SOCKET, SO_NOSIGPIPE, (void*)&set, sizeof(int));
+#endif
+
+    //Disable Nagle's algorithm
+#ifdef WIN32
+    setsockopt(hSocket, IPPROTO_TCP, TCP_NODELAY, (const char*)&set, sizeof(int));
+#else
+    setsockopt(hSocket, IPPROTO_TCP, TCP_NODELAY, (void*)&set, sizeof(int));
 #endif
 
     // Set to non-blocking
@@ -983,7 +990,7 @@ std::vector<unsigned char> CNetAddr::GetGroup() const
         nBits -= 8;
     }
     if (nBits > 0)
-        vchRet.push_back(GetByte(15 - nStartByte) | ((1 << nBits) - 1));
+        vchRet.push_back(GetByte(15 - nStartByte) | ((1 << (8 - nBits)) - 1));
 
     return vchRet;
 }

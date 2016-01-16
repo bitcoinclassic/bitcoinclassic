@@ -117,6 +117,7 @@ BITCOIN_CORE_H = \
   protocol.h \
   pubkey.h \
   random.h \
+  reverselock.h \
   rpcclient.h \
   rpcprotocol.h \
   rpcserver.h \
@@ -342,8 +343,7 @@ endif
 
 bitcoin_cli_LDADD = \
   $(LIBBITCOIN_CLI) \
-  $(LIBBITCOIN_UTIL) \
-  $(LIBSECP256K1)
+  $(LIBBITCOIN_UTIL)
 
 bitcoin_cli_LDADD += $(BOOST_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS)
 #

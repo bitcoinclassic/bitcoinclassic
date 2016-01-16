@@ -47,11 +47,11 @@
     </message>
     <message>
         <source>Choose the address to send coins to</source>
-        <translation>Elije la dirección para enviar monedas a</translation>
+        <translation>Elija la dirección para enviar monedas a</translation>
     </message>
     <message>
         <source>Choose the address to receive coins with</source>
-        <translation>Elije la dirección para recibir monedas con</translation>
+        <translation>Elija la dirección para recibir monedas con</translation>
     </message>
     <message>
         <source>C&amp;hoose</source>
@@ -75,7 +75,7 @@
     </message>
     <message>
         <source>Copy &amp;Label</source>
-        <translation>Copiar &amp;etiqueta</translation>
+        <translation>Copiar &amp;Etiqueta</translation>
     </message>
     <message>
         <source>&amp;Edit</source>
@@ -1975,10 +1975,6 @@
         <translation>Copiar Cambio</translation>
     </message>
     <message>
-        <source>Total Amount %1 (= %2)</source>
-        <translation>Cuantía Total %1 (=%2)</translation>
-    </message>
-    <message>
         <source>or</source>
         <translation>o</translation>
     </message>
@@ -2013,6 +2009,10 @@
     <message>
         <source>Pay only the minimum fee of %1</source>
         <translation>Paga sólo la cuota mínima de %1</translation>
+    </message>
+    <message>
+        <source>Total Amount %1&lt;span style='font-size:10pt;font-weight:normal;'&gt;&lt;br /&gt;(=%2)&lt;/span&gt;</source>
+        <translation>Monto Total %1&lt;span style='font-size:10pt;font-weight:normal;'&gt;&lt;br /&gt;(=%2)&lt;/span&gt;</translation>
     </message>
     <message>
         <source>The recipient address is not valid. Please recheck.</source>
@@ -2933,10 +2933,6 @@
         <translation>Error al abrir base de datos de bloques.</translation>
     </message>
     <message>
-        <source>Error: A fatal internal error occured, see debug.log for details</source>
-        <translation>Error: un error grave interno ocurrió, sea debug.log para más detalles.</translation>
-    </message>
-    <message>
         <source>Error: Disk space is low!</source>
         <translation>Error: ¡Espacio en disco bajo!</translation>
     </message>
@@ -3185,6 +3181,10 @@ por ejemplo: alertnotify=echo %% s | correo -s "Alerta Bitcoin" admin@foo.com
         <translation>Error al leer la base de datos, cerrando.</translation>
     </message>
     <message>
+        <source>Error: A fatal internal error occurred, see debug.log for details</source>
+        <translation>Un error interno fatal ocurrió, ver debug.log para detalles</translation>
+    </message>
+    <message>
         <source>Error: Unsupported argument -tor found, use -onion.</source>
         <translation>Error: Argumento encontrado -tor no soportado, utilice -onion</translation>
     </message>
@@ -3233,6 +3233,10 @@ por ejemplo: alertnotify=echo %% s | correo -s "Alerta Bitcoin" admin@foo.com
         <translation>Opciones de nodos de retransmisión:</translation>
     </message>
     <message>
+        <source>Pruning blockstore...</source>
+        <translation>Poda blockstore ...</translation>
+    </message>
+    <message>
         <source>RPC SSL options: (see the Bitcoin Wiki for SSL setup instructions)</source>
         <translation>Opciones SSL de RPC: (véase la wiki de Bitcoin para las instrucciones de instalación de SSL)</translation>
     </message>
@@ -3247,6 +3251,10 @@ por ejemplo: alertnotify=echo %% s | correo -s "Alerta Bitcoin" admin@foo.com
     <message>
         <source>Rebuild block chain index from current blk000??.dat files on startup</source>
         <translation>Reconstruir el índice de la cadena de bloques en el arranque desde los actuales ficheros blk000??.dat</translation>
+    </message>
+    <message>
+        <source>Receive and display P2P network alerts (default: %u)</source>
+        <translation>Recibir y mostrar alertas de red P2P (default: %u)</translation>
     </message>
     <message>
         <source>Send trace/debug info to console instead of debug.log file</source>
