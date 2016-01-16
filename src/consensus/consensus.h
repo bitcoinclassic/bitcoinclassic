@@ -6,10 +6,36 @@
 #ifndef BITCOIN_CONSENSUS_CONSENSUS_H
 #define BITCOIN_CONSENSUS_CONSENSUS_H
 
+#include <stdint.h>
+
+static const uint64_t BCIP01_FORK_TIME = 1456790400; // March 01 2016, midnight UTC
+
 /** The maximum allowed size for a serialized block, in bytes (network rule) */
-static const unsigned int MAX_BLOCK_SIZE = 1000000;
+inline unsigned int MaxBlockSize(uint64_t nTime) {
+    if (nTime < BCIP01_FORK_TIME)
+        return 1000*1000;
+
+    // cap for tests
+    if (nTime > 4113158400)
+        nTime = 4113158400;
+
+/** Smooth transition of 20 bytes every 10 minutes, until 4 megabytes is reached */
+    if (((2*1000*1000) + (20 * ((nTime - BCIP01_FORK_TIME) / 600))) <= 4000000) {
+      return (2*1000*1000) + (20 * ((nTime - BCIP01_FORK_TIME) / 600));
+    }
+    if (((2*1000*1000) + (20 * ((nTime - BCIP01_FORK_TIME) / 600))) > 4000000){
+      return 4000000;
+    }
+}
+
+/** The maximum allowed size for a serialized transaction, in bytes */
+static const unsigned int MAX_TRANSACTION_SIZE = 1000*1000;
+
 /** The maximum allowed number of signature check operations in a block (network rule) */
-static const unsigned int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/50;
+inline unsigned int MaxBlockSigops(uint64_t nTime) {
+    return MaxBlockSize(nTime) / 50;
+}
+
 /** Coinbase transaction outputs can only be spent after this number of new blocks (network rule) */
 static const int COINBASE_MATURITY = 100;
 
