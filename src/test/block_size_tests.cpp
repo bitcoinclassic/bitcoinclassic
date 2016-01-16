@@ -82,17 +82,17 @@ BOOST_AUTO_TEST_CASE(TwentyMegFork)
     CBlock *pblock = &pblocktemplate->block;
 
     // Before fork time...
-    BOOST_CHECK(TestCheckBlock(*pblock, TWENTY_MEG_FORK_TIME-1LL, 1000*1000)); // 1MB : valid
-    BOOST_CHECK(!TestCheckBlock(*pblock, TWENTY_MEG_FORK_TIME-1LL, 1000*1000+1)); // >1MB : invalid
-    BOOST_CHECK(!TestCheckBlock(*pblock, TWENTY_MEG_FORK_TIME-1LL, 2*1000*1000)); // 2MB : invalid
+    BOOST_CHECK(TestCheckBlock(*pblock, TWO_MEG_FORK_TIME-1LL, 1000*1000)); // 1MB : valid
+    BOOST_CHECK(!TestCheckBlock(*pblock, TWO_MEG_FORK_TIME-1LL, 1000*1000+1)); // >1MB : invalid
+    BOOST_CHECK(!TestCheckBlock(*pblock, TWO_MEG_FORK_TIME-1LL, 2*1000*1000)); // 2MB : invalid
 
     // Exactly at fork time...
-    BOOST_CHECK(TestCheckBlock(*pblock, TWENTY_MEG_FORK_TIME, 1000*1000)); // 1MB : valid
-    BOOST_CHECK(TestCheckBlock(*pblock, TWENTY_MEG_FORK_TIME, 2*1000*1000)); // 2MB : valid
-    BOOST_CHECK(!TestCheckBlock(*pblock, TWENTY_MEG_FORK_TIME, 2*1000*1000+1)); // >2MB : invalid
+    BOOST_CHECK(TestCheckBlock(*pblock, TWO_MEG_FORK_TIME, 1000*1000)); // 1MB : valid
+    BOOST_CHECK(TestCheckBlock(*pblock, TWO_MEG_FORK_TIME, 2*1000*1000)); // 2MB : valid
+    BOOST_CHECK(!TestCheckBlock(*pblock, TWO_MEG_FORK_TIME, 2*1000*1000+1)); // >2MB : invalid
 
     // A year after fork time:
-    uint64_t yearAfter = TWENTY_MEG_FORK_TIME+60*60*24*365;
+    uint64_t yearAfter = TWO_MEG_FORK_TIME+60*60*24*365;
     BOOST_CHECK(TestCheckBlock(*pblock, yearAfter, 1000*1000)); // 1MB : valid
     BOOST_CHECK(TestCheckBlock(*pblock, yearAfter, 2*1000*1000)); // 2MB : valid
     BOOST_CHECK(!TestCheckBlock(*pblock, yearAfter, 2*1000*1000+1)); // >2MB : invalid
