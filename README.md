@@ -3,7 +3,7 @@ Bitcoin Classic integration/staging tree
 
 [![Build Status](https://travis-ci.org/bitcoin/bitcoin.svg?branch=master)](https://travis-ci.org/bitcoin/bitcoin)
 
-https://www.bitcoin.org
+https://www.bitcoinclassic.com
 
 What is Bitcoin?
 ----------------
@@ -15,7 +15,7 @@ out collectively by the network. Bitcoin Classic is the name of open source
 software which enables the use of this currency.
 
 For more information, as well as an immediately useable, binary version of
-the Bitcoin Classic software, see https://www.bitcoin.org/en/download.
+the Bitcoin Classic software, see https://www.bitcoinclassic.com/en/download.
 
 License
 -------

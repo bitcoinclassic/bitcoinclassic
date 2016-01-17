@@ -2,12 +2,12 @@ Format: http://svn.debian.org/wsvn/dep/web/deps/dep5.mdwn?rev=174
 Upstream-Name: Bitcoin
 Upstream-Contact: Satoshi Nakamoto <satoshin@gmx.com>
  irc://#bitcoin@freenode.net
-Source: https://github.com/bitcoin/bitcoin
+Source: https://github.com/bitcoinclassic/bitcoinclassic
 
 Files: *
 Copyright: 2009-2012, Bitcoin Classic Developers
 License: Expat
-Comment: The Bitcoin Classic Developers encompasses the current developers listed on bitcoin.org,
+Comment: The Bitcoin Classic Developers encompasses the current developers listed on bitcoinclassic.com,
          as well as the numerous contributors to the project.
 
 Files: src/json/*

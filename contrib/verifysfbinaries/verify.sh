@@ -1,6 +1,6 @@
 #!/bin/bash
 
-###   This script attempts to download the signature file SHA256SUMS.asc from bitcoin.org
+###   This script attempts to download the signature file SHA256SUMS.asc from bitcoinclassic.com
 ###   It first checks if the signature passes, and then downloads the files specified in
 ###   the file, and checks if the hashes of these files match those that are specified
 ###   in the signature file.
@@ -18,12 +18,12 @@ WORKINGDIR="/tmp/bitcoin"
 TMPFILE="hashes.tmp"
 
 #this URL is used if a version number is not specified as an argument to the script
-SIGNATUREFILE="https://bitcoin.org/bin/0.9.2.1/SHA256SUMS.asc"
+SIGNATUREFILE="https://bitcoinclassic.com/bin/0.9.2.1/SHA256SUMS.asc"
 
 SIGNATUREFILENAME="SHA256SUMS.asc"
 RCSUBDIR="test/"
-BASEDIR="https://bitcoin.org/bin/"
-VERSIONPREFIX="bitcoin-"
+BASEDIR="https://bitcoinclassic.com/bin/"
+VERSIONPREFIX="bitcoin-classic-"
 RCVERSIONSTRING="rc"
 
 if [ ! -d "$WORKINGDIR" ]; then
