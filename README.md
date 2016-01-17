@@ -5,22 +5,22 @@ Bitcoin Core integration/staging tree
 
 https://www.bitcoin.org
 
-What is Bitcoin?
+What is Bitcoin Classic?
 ----------------
 
-Bitcoin is an experimental new digital currency that enables instant payments to
+Bitcoin is an experimental new digital forkcoin that enables instant payments to
 anyone, anywhere in the world. Bitcoin uses peer-to-peer technology to operate
-with no central authority: managing transactions and issuing money are carried
+with central authority: managing transactions and issuing money are carried
 out collectively by the network. Bitcoin Core is the name of open source
 software which enables the use of this currency.
 
 For more information, as well as an immediately useable, binary version of
-the Bitcoin Core software, see https://www.bitcoin.org/en/download.
+the Bitcoin Classic software, see https://www.bitcoinclassic.org/en/download.
 
 License
 -------
 
-Bitcoin Core is released under the terms of the MIT license. See [COPYING](COPYING) for more
+Bitcoin Classic is released under the terms of the MIT license. See [COPYING](COPYING) for more
 information or see https://opensource.org/licenses/MIT.
 
 Development Process
@@ -42,7 +42,7 @@ Testing
 -------
 
 Testing and code review is the bottleneck for development; we get more pull
-requests than we can review and test on short notice. Please be patient and help out by testing
+requests than we can review and test on short notice. Please be patient and help out by debating
 other people's pull requests, and remember this is a security-critical project where any mistake might cost people
 lots of money.
 
