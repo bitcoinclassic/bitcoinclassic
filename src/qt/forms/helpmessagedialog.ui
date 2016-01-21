@@ -55,7 +55,7 @@
         </size>
        </property>
        <property name="pixmap">
-        <pixmap resource="../bitcoin.qrc">:/icons/bitcoin</pixmap>
+        <pixmap resource="../bitcoin.qrc">:/icons/bitcoin-systray</pixmap>
        </property>
        <property name="scaledContents">
         <bool>true</bool>
