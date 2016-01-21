@@ -32,7 +32,7 @@ public Q_SLOTS:
     void slotFinish(QWidget *mainWin);
 
     /** Show message and progress */
-    void showMessage(const QString &message, int alignment, const QColor &color);
+    void showMessage(const QString &message, int alignment);
 
 private:
     /** Connect core signals to splash screen */
@@ -42,7 +42,6 @@ private:
 
     QPixmap pixmap;
     QString curMessage;
-    QColor curColor;
     int curAlignment;
 };
 
