@@ -5,7 +5,8 @@ Upstream-Contact: Satoshi Nakamoto <satoshin@gmx.com>
 Source: https://github.com/bitcoinclassic/bitcoinclassic
 
 Files: *
-Copyright: 2009-2012, Bitcoin Classic Developers
+Copyright: 2009-2012, Bitcoin Core Developers
+           2016, Bitcoin Classic Developers
 License: Expat
 Comment: The Bitcoin Classic Developers encompasses the current developers listed on bitcoinclassic.com,
          as well as the numerous contributors to the project.
