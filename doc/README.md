@@ -1,9 +1,9 @@
-Bitcoin Core 0.12.99
+Bitcoin Classic 0.12.99
 =====================
 
 Setup
 ---------------------
-[Bitcoin Core](http://bitcoin.org/en/download) is the original Bitcoin client and it builds the backbone of the network. However, it downloads and stores the entire history of Bitcoin transactions (which is currently several GBs); depending on the speed of your computer and network connection, the synchronization process can take anywhere from a few hours to a day or more.
+[Bitcoin Classic](https://bitcoinclassic.com/) is a fork of the original Bitcoin client and it builds the backbone of the network. However, it downloads and stores the entire history of Bitcoin transactions (which is currently several GBs); depending on the speed of your computer and network connection, the synchronization process can take anywhere from a few hours to a day or more.
 
 Running
 ---------------------
@@ -28,14 +28,14 @@ Unpack the files into a directory, and then run bitcoin-qt.exe.
 
 ### OS X
 
-Drag Bitcoin-Core to your applications folder, and then run Bitcoin-Core.
+Drag Bitcoin-Classic to your applications folder, and then run Bitcoin-Classic.
 
 ### Need Help?
 
 * See the documentation at the [Bitcoin Wiki](https://en.bitcoin.it/wiki/Main_Page)
 for help and more information.
-* Ask for help on [#bitcoin](http://webchat.freenode.net?channels=bitcoin) on Freenode. If you don't have an IRC client use [webchat here](http://webchat.freenode.net?channels=bitcoin).
-* Ask for help on the [BitcoinTalk](https://bitcointalk.org/) forums, in the [Technical Support board](https://bitcointalk.org/index.php?board=4.0).
+* Ask for help on the [Bitcoin Classic Slack community](http://invite.bitcoinclassic.com/).
+* Ask for help on the [Bitcoin.com](https://forum.bitcoin.com/) forums, in the [Technical Support board](https://forum.bitcoin.com/full-clients-bitcoin-classic/).
 
 Building
 ---------------------
@@ -49,7 +49,7 @@ The following are developer notes on how to build Bitcoin on your native platfor
 
 Development
 ---------------------
-The Bitcoin repo's [root README](https://github.com/bitcoin/bitcoin/blob/master/README.md) contains relevant information on the development process and automated testing.
+The Bitcoin Classic repo's [root README](https://github.com/bitcoinclassic/bitcoinclassic/blob/master/README.md) contains relevant information on the development process and automated testing.
 
 - [Developer Notes](developer-notes.md)
 - [Multiwallet Qt Development](multiwallet-qt.md)
@@ -65,9 +65,10 @@ The Bitcoin repo's [root README](https://github.com/bitcoin/bitcoin/blob/master/
 - [Dnsseed Policy](dnsseed-policy.md)
 
 ### Resources
-* Discuss on the [BitcoinTalk](https://bitcointalk.org/) forums, in the [Development & Technical Discussion board](https://bitcointalk.org/index.php?board=6.0).
-* Discuss project-specific development on #bitcoin-core-dev on Freenode. If you don't have an IRC client use [webchat here](http://webchat.freenode.net/?channels=bitcoin-core-dev).
-* Discuss general Bitcoin development on #bitcoin-dev on Freenode. If you don't have an IRC client use [webchat here](http://webchat.freenode.net/?channels=bitcoin-dev).
+* Discuss on the [Bitcoin.com](https://forum.bitcoin.com/) forums, in the [Development & Technical Discussion board](https://forum.bitcoin.com/full-clients-bitcoin-classic/).
+* Discuss project-specific development on the [Bitcoin Classic Slack community](http://invite.bitcoinclassic.com/).
+* Discuss general Bitcoin development on the [Bitcoin Classic Slack community](http://invite.bitcoinclassic.com/).
+* Vote on issues  on the [Bitcoin Classic Consider.it](https://bitcoinclassic.consider.it/).
 
 ### Miscellaneous
 - [Assets Attribution](assets-attribution.md)
