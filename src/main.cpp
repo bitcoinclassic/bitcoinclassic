@@ -1842,6 +1842,8 @@ static int64_t nTimeTotal = 0;
 
 static bool DidBlockTriggerSizeFork(const CBlock &block, const CBlockIndex *pindex, const CChainParams &chainparams)
 {
+    if (block.nTime > chainparams.GetConsensus().SizeForkExpiration())
+        return false;
     if ((block.nVersion & FORK_BIT_2MB) != FORK_BIT_2MB)
         return false;
     if (pblocktree->ForkBitActivated(FORK_BIT_2MB) != uint256())
@@ -5310,12 +5312,16 @@ uint32_t MaxLegacySigops(uint32_t nBlockTime)
     return std::numeric_limits<uint32_t>::max(); // Use accurately-counted limit
 }
 
-uint32_t ForkBits(uint32_t nTime) {
+uint32_t ForkBits(uint32_t nTime, const Consensus::Params& consensusParams) {
     uint32_t bits = 0;
     AssertLockHeld(cs_main);
     // Vote for 2 MB until the fork time to show continued support
-    if (sizeForkTime.load() < nTime && (GetBoolArg("-vote2mb", DEFAULT_2MB_VOTE) || (pblocktree->ForkBitActivated(FORK_BIT_2MB) != uint256())))
+    if (nTime < sizeForkTime.load() &&
+        nTime < consensusParams.SizeForkExpiration() &&
+        (GetBoolArg("-vote2mb", DEFAULT_2MB_VOTE) || (pblocktree->ForkBitActivated(FORK_BIT_2MB) != uint256())))
+    {
         bits |= FORK_BIT_2MB;
+    }
     return bits;
 }
 

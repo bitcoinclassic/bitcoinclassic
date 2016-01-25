@@ -548,6 +548,6 @@ uint32_t MaxBlockSighash(uint32_t nBlockTime);
 uint32_t MaxLegacySigops(uint32_t nBlockTime);
 
 /** What forks we are expressing support for */
-uint32_t ForkBits(uint32_t nTime);
+uint32_t ForkBits(uint32_t nTime, const Consensus::Params& consensusParams);
 
 #endif // BITCOIN_MAIN_H

@@ -129,7 +129,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn)
         const int64_t nMedianTimePast = pindexPrev->GetMedianTimePast();
         CCoinsViewCache view(pcoinsTip);
 
-        pblock->nVersion = BASE_VERSION | ForkBits(pblock->nTime);
+        pblock->nVersion = BASE_VERSION | ForkBits(pblock->nTime, chainparams.GetConsensus());
         // -regtest only: allow overriding block.nVersion with
         // -blockversion=N to test forking scenarios
         if (Params().MineBlocksOnDemand())

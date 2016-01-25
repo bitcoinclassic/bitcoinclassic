@@ -15,14 +15,15 @@ CACHE_DIR = "cache_bigblock"
 
 # regression test / testnet fork params:
 FORK_TIME = 1393632000
-FORK_BLOCK_VERSION = 0x30000000
+FORK_EXPIRATION = 1514764800
+FORK_BLOCK_BIT = 0x10000000
 FORK_GRACE_PERIOD = 60*60*24
 
 class BigBlockTest(BitcoinTestFramework):
 
     def setup_chain(self):
         print("Initializing test directory "+self.options.tmpdir)
-        print("Be patient, this test can take 5 or more minutes to run.")
+        print("Be patient, this test can take 2 or more minutes to run.")
 
         if not os.path.isdir(os.path.join(CACHE_DIR, "node0")):
             print("Creating initial chain")
@@ -40,16 +41,16 @@ class BigBlockTest(BitcoinTestFramework):
             # Use node0 to mine blocks for input splitting
             self.nodes.append(start_node(0, CACHE_DIR, ["-blockmaxsize=2000000", "-debug=net",
                                                         "-mocktime=%d"%(first_block_time,),
-                                                        "-blockversion=%d"%(FORK_BLOCK_VERSION,)]))
+                                                        "-vote2mb=1"]))
             self.nodes.append(start_node(1, CACHE_DIR, ["-blockmaxsize=50000", "-debug=net",
                                                         "-mocktime=%d"%(first_block_time,),
-                                                        "-blockversion=4"]))
+                                                        "-vote2mb=0"]))
             self.nodes.append(start_node(2, CACHE_DIR, ["-blockmaxsize=1000",
                                                         "-mocktime=%d"%(first_block_time,),
-                                                        "-blockversion=%d"%(FORK_BLOCK_VERSION,)]))
+                                                        "-vote2mb=1"]))
             self.nodes.append(start_node(3, CACHE_DIR, ["-blockmaxsize=1000",
                                                         "-mocktime=%d"%(first_block_time,),
-                                                        "-blockversion=4"]))
+                                                        "-vote2mb=0"]))
 
             set_node_times(self.nodes, first_block_time)
 
@@ -67,7 +68,10 @@ class BigBlockTest(BitcoinTestFramework):
             for i in range(0,200):
                 miner = i%2
                 set_node_times(self.nodes, block_time)
-                self.nodes[miner].generate(1)
+                b1hash = self.nodes[miner].generate(1)[0]
+                b1 = self.nodes[miner].getblock(b1hash, True)
+                if miner % 2: assert(not (b1['version'] & FORK_BLOCK_BIT))
+                else: assert(b1['version'] & FORK_BLOCK_BIT)
                 assert(self.sync_blocks(self.nodes[0:2]))
                 block_time = block_time + 10*60
 
@@ -108,7 +112,7 @@ class BigBlockTest(BitcoinTestFramework):
             shutil.copytree(from_dir, to_dir)
             initialize_datadir(self.options.tmpdir, i) # Overwrite port/rpcport in bitcoin.conf
 
-    def sync_blocks(self, rpc_connections, wait=1, max_wait=30):
+    def sync_blocks(self, rpc_connections, wait=0.1, max_wait=30):
         """
         Wait until everybody has the same block count
         """
@@ -123,18 +127,18 @@ class BigBlockTest(BitcoinTestFramework):
         self.nodes = []
         last_block_time = FORK_TIME - 10*60
 
-        self.nodes.append(start_node(0, self.options.tmpdir, ["-blockmaxsize=8000000", "-debug=net",
+        self.nodes.append(start_node(0, self.options.tmpdir, ["-blockmaxsize=2000000", "-debug=net",
                                                               "-mocktime=%d"%(last_block_time,),
-                                                              "-blockversion=%d"%(FORK_BLOCK_VERSION,)]))
+                                                              "-vote2mb=1"]))
         self.nodes.append(start_node(1, self.options.tmpdir, ["-blockmaxsize=50000", "-debug=net",
                                                               "-mocktime=%d"%(last_block_time,),
-                                                              "-blockversion=4"]))
+                                                              "-vote2mb=0"]))
         self.nodes.append(start_node(2, self.options.tmpdir, ["-blockmaxsize=1000",
                                                               "-mocktime=%d"%(last_block_time,),
-                                                              "-blockversion=%d"%(FORK_BLOCK_VERSION,)]))
+                                                              "-vote2mb=1"]))
         self.nodes.append(start_node(3, self.options.tmpdir, ["-blockmaxsize=1000",
                                                               "-mocktime=%d"%(last_block_time,),
-                                                              "-blockversion=4"]))
+                                                              "-vote2mb=0"]))
         connect_nodes_bi(self.nodes, 0, 1)
         connect_nodes_bi(self.nodes, 1, 2)
         connect_nodes_bi(self.nodes, 2, 3)
@@ -151,11 +155,16 @@ class BigBlockTest(BitcoinTestFramework):
             txdata = from_node.getrawtransaction(txid)
             to_node.sendrawtransaction(txdata)
 
-    def TestMineBig(self, expect_big):
+    def TestMineBig(self, expect_big, expect_version=None):
         # Test if node0 will mine big blocks.
         b1hash = self.nodes[0].generate(1)[0]
         b1 = self.nodes[0].getblock(b1hash, True)
         assert(self.sync_blocks(self.nodes))
+
+        if expect_version:
+            assert b1['version'] & FORK_BLOCK_BIT
+        elif not expect_version==None:
+            assert not b1['version'] & FORK_BLOCK_BIT
 
         if expect_big:
             assert(b1['size'] > 1000*1000)
@@ -188,8 +197,15 @@ class BigBlockTest(BitcoinTestFramework):
         # produce up-version blocks plus a grace period
 
         # At this point the chain is 200 blocks long
-        # alternating between version=4 and version=FORK_BLOCK_VERSION
+        # alternating between version=0x20000000 and version=0x30000000
         # blocks.
+
+        # Nodes will ignore their -vote2mb settings under a few situations.
+        # First, during the grace period, all nodes will vote for the fork.
+        # Second, after activation, all nodes will cease voting for the fork,
+        # to allow the 0x10000000 bit to be recycled for other forks. Third,
+        # blocks after the expiration date will not vote for the fork, and
+        # may not activate it, 
 
         # NOTE: the order of these test is important!
         # set_node_times must advance time. Local time moving
@@ -198,8 +214,22 @@ class BigBlockTest(BitcoinTestFramework):
         # Time starts a little before fork activation time:
         set_node_times(self.nodes, FORK_TIME - 100)
 
-        # No supermajority
-        self.TestMineBig(False)
+        # No supermajority, vote2mb=1
+        self.TestMineBig(False, True)
+
+        # Create a block after the expiration date. This will be rejected 
+        # by the other nodes for being more than 2 hours in the future,
+        # and will have FORK_BLOCK_BIT cleared.
+
+        set_node_times(self.nodes[0:1], FORK_EXPIRATION + 100)
+
+        b1hash = self.nodes[0].generate(1)[0]
+        b1 = self.nodes[0].getblock(b1hash, True)
+        assert(not (b1['version'] & FORK_BLOCK_BIT))
+        self.nodes[0].invalidateblock(b1hash)
+        set_node_times(self.nodes[0:1], FORK_TIME - 100)
+        assert(self.sync_blocks(self.nodes))
+
 
         # node2 creates empty up-version blocks; creating
         # 50 in a row makes 75 of previous 100 up-version
@@ -211,16 +241,26 @@ class BigBlockTest(BitcoinTestFramework):
             blocks.append(self.nodes[2].generate(1)[0])
         assert(self.sync_blocks(self.nodes))
 
+        # Now that we have a supermajority, node3 should ignore its -vote2mb=0
+        # setting and indicate that it is technically compatible with the fork
+
+        b1hash = self.nodes[3].generate(1)[0]
+        b1 = self.nodes[3].getblock(b1hash, True)
+        assert(b1['version'] & FORK_BLOCK_BIT)
+        assert(self.sync_blocks(self.nodes))
+        for node in self.nodes: node.invalidateblock(b1hash)
+        assert(self.sync_blocks(self.nodes))
+
         # Earliest time for a big block is the timestamp of the
         # supermajority block plus grace period:
         lastblock = self.nodes[0].getblock(blocks[-1], True)
         t_fork = lastblock["time"] + FORK_GRACE_PERIOD
 
-        self.TestMineBig(False)  # Supermajority... but before grace period end
+        self.TestMineBig(False, True)  # Supermajority... but before grace period end
 
         # Test right around the switchover time.
         set_node_times(self.nodes, t_fork-1)
-        self.TestMineBig(False)
+        self.TestMineBig(False, True)
 
         # Note that node's local times are irrelevant, block timestamps
         # are all that count-- so node0 will mine a big block with timestamp in the
@@ -228,18 +268,18 @@ class BigBlockTest(BitcoinTestFramework):
         # it's timestamp is not too far in the future (2 hours) it will be
         # accepted.
         self.nodes[0].setmocktime(t_fork)
-        self.TestMineBig(True)
+        self.TestMineBig(True, False)
 
         # Shutdown then restart node[0], it should
         # remember supermajority state and produce a big block.
         stop_node(self.nodes[0], 0)
         self.nodes[0] = start_node(0, self.options.tmpdir, ["-blockmaxsize=2000000", "-debug=net",
                                                             "-mocktime=%d"%(t_fork,),
-                                                            "-blockversion=%d"%(FORK_BLOCK_VERSION,)])
+                                                            "-vote2mb=1"])
         self.copy_mempool(self.nodes[1], self.nodes[0])
         connect_nodes_bi(self.nodes, 0, 1)
         connect_nodes_bi(self.nodes, 0, 3)
-        self.TestMineBig(True)
+        self.TestMineBig(True, False)
 
         # Test re-orgs past the activation block (blocks[-1])
         #
@@ -255,19 +295,19 @@ class BigBlockTest(BitcoinTestFramework):
         # activation time, and refuse to mine a big block:
         self.nodes[0] = start_node(0, self.options.tmpdir, ["-blockmaxsize=2000000", "-debug=net",
                                                             "-mocktime=%d"%(t_fork,),
-                                                            "-blockversion=%d"%(FORK_BLOCK_VERSION,)])
+                                                            "-vote2mb=1"])
         self.copy_mempool(self.nodes[1], self.nodes[0])
         connect_nodes_bi(self.nodes, 0, 1)
         connect_nodes_bi(self.nodes, 0, 3)
         assert(self.sync_blocks(self.nodes))
-        self.TestMineBig(False)
+        self.TestMineBig(False, True)
 
-        # Mine 4 FORK_BLOCK_VERSION blocks and set the time past the
+        # Mine 4 FORK_BLOCK_BIT blocks and set the time past the
         # grace period:  bigger block OK:
         self.nodes[2].generate(4)
         assert(self.sync_blocks(self.nodes))
         set_node_times(self.nodes, t_fork + FORK_GRACE_PERIOD)
-        self.TestMineBig(True)
+        self.TestMineBig(True, False)
 
 
         print("Cached test chain and transactions left in %s"%(CACHE_DIR))
