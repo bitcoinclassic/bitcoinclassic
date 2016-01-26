@@ -906,11 +906,7 @@
         <source>Show splash screen on startup (default: %u)</source>
         <translation>起動時にスプラッシュ画面を表示する (初期値: %u)</translation>
     </message>
-    <message>
-        <source>Reset all settings changes made over the GUI</source>
-        <translation>GUI 経由で行われた設定の変更を全てリセット</translation>
-    </message>
-</context>
+    </context>
 <context>
     <name>Intro</name>
     <message>

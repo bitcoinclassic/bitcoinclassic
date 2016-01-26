@@ -906,11 +906,7 @@
         <source>Show splash screen on startup (default: %u)</source>
         <translation>Başlatıldığında başlangıç ekranını göster (varsayılan: %u)</translation>
     </message>
-    <message>
-        <source>Reset all settings changes made over the GUI</source>
-        <translation>Arayüzde yapılan tüm seçenek değişikliklerini sıfırla</translation>
-    </message>
-</context>
+    </context>
 <context>
     <name>Intro</name>
     <message>

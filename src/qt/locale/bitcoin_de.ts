@@ -906,11 +906,7 @@
         <source>Show splash screen on startup (default: %u)</source>
         <translation>Startbildschirm beim Starten anzeigen (Standard: %u)</translation>
     </message>
-    <message>
-        <source>Reset all settings changes made over the GUI</source>
-        <translation>Setze alle Einstellungen zurück, die über die grafische Oberfläche geändert wurden.</translation>
-    </message>
-</context>
+    </context>
 <context>
     <name>Intro</name>
     <message>

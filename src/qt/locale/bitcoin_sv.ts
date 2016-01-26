@@ -907,11 +907,7 @@ Var vänlig och försök igen.</translation>
         <source>Show splash screen on startup (default: %u)</source>
         <translation>Visa startbild vid uppstart (standard: %u)</translation>
     </message>
-    <message>
-        <source>Reset all settings changes made over the GUI</source>
-        <translation>Återställ alla inställningar som gjorts över GUI</translation>
-    </message>
-</context>
+    </context>
 <context>
     <name>Intro</name>
     <message>

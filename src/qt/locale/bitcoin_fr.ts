@@ -906,11 +906,7 @@
         <source>Show splash screen on startup (default: %u)</source>
         <translation>Afficher l'écran d'accueil au démarrage (par défaut : %u)</translation>
     </message>
-    <message>
-        <source>Reset all settings changes made over the GUI</source>
-        <translation>Réinitialiser tous les changements de paramètres appliqués à l'IUG</translation>
-    </message>
-</context>
+    </context>
 <context>
     <name>Intro</name>
     <message>
