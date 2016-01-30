@@ -288,7 +288,7 @@ Setting up the Gitian image
 -------------------------
 
 Gitian needs a virtual image of the operating system to build in.
-Currently this is Ubuntu Precise x86_64.
+Currently this is Ubuntu Trusty x86_64.
 This image will be copied and used every time that a build is started to
 make sure that the build is deterministic.
 Creating the image will take a while, but only has to be done once.
@@ -297,7 +297,7 @@ Execute the following as user `debian`:
 
 ```bash
 cd gitian-builder
-bin/make-base-vm --lxc --arch amd64 --suite precise
+bin/make-base-vm --lxc --arch amd64 --suite trusty
 ```
 
 There will be a lot of warnings printed during build of the image. These can be ignored.
@@ -337,7 +337,7 @@ Output from `gbuild` will look something like
     Resolving deltas: 100% (25724/25724), done.
     From https://github.com/bitcoin/bitcoin
     ... (new tags, new branch etc)
-    --- Building for precise x86_64 ---
+    --- Building for trusty x86_64 ---
     Stopping target if it is up
     Making a new image copy
     stdin: is not a tty
