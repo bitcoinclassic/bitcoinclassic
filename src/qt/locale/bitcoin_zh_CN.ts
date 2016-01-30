@@ -906,11 +906,7 @@
         <source>Show splash screen on startup (default: %u)</source>
         <translation>显示启动画面（默认：%u）</translation>
     </message>
-    <message>
-        <source>Reset all settings changes made over the GUI</source>
-        <translation>重置所有图形界面所做的更改</translation>
-    </message>
-</context>
+    </context>
 <context>
     <name>Intro</name>
     <message>

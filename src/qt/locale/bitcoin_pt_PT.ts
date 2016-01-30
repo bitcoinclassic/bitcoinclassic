@@ -874,6 +874,10 @@
         <source>command-line options</source>
         <translation>opções da linha de comandos</translation>
     </message>
+    <message>
+        <source>Start minimized</source>
+        <translation>Iniciar minimizado</translation>
+    </message>
     </context>
 <context>
     <name>Intro</name>

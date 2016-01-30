@@ -902,11 +902,7 @@
         <source>Show splash screen on startup (default: %u)</source>
         <translation>Wyświetl okno powitalne podczas uruchamiania (domyślnie: %u)</translation>
     </message>
-    <message>
-        <source>Reset all settings changes made over the GUI</source>
-        <translation>Ustaw jako domyślne wszystkie ustawienia interfejsu</translation>
-    </message>
-</context>
+    </context>
 <context>
     <name>Intro</name>
     <message>

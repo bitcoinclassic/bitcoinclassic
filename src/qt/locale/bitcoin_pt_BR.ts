@@ -906,11 +906,7 @@
         <source>Show splash screen on startup (default: %u)</source>
         <translation>Exibir tela de abertura na inicialização (padrão: %u)</translation>
     </message>
-    <message>
-        <source>Reset all settings changes made over the GUI</source>
-        <translation>Desfazer todas as mudanças de configuração feitas na interface</translation>
-    </message>
-</context>
+    </context>
 <context>
     <name>Intro</name>
     <message>

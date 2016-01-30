@@ -906,11 +906,7 @@
         <source>Show splash screen on startup (default: %u)</source>
         <translation>Показывать экран-заставку при запуске (по умолчанию: %u)</translation>
     </message>
-    <message>
-        <source>Reset all settings changes made over the GUI</source>
-        <translation>Сбросить все настройки сделанные через графический интерфейс</translation>
-    </message>
-</context>
+    </context>
 <context>
     <name>Intro</name>
     <message>

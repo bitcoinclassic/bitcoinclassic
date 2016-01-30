@@ -906,11 +906,7 @@
         <source>Show splash screen on startup (default: %u)</source>
         <translation>Toon opstartscherm bij opstarten (standaard: %u)</translation>
     </message>
-    <message>
-        <source>Reset all settings changes made over the GUI</source>
-        <translation>Reset alle wijzigingen aan instellingen gedaan met de GUI</translation>
-    </message>
-</context>
+    </context>
 <context>
     <name>Intro</name>
     <message>

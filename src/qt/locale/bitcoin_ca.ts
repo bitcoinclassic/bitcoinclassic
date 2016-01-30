@@ -906,11 +906,7 @@
         <source>Show splash screen on startup (default: %u)</source>
         <translation>Mostra la pantalla de benvinguda a l'inici (per defecte: %u)</translation>
     </message>
-    <message>
-        <source>Reset all settings changes made over the GUI</source>
-        <translation>Reinicialitza tots els canvis de configuració fets des de la interfície gràfica</translation>
-    </message>
-</context>
+    </context>
 <context>
     <name>Intro</name>
     <message>

@@ -906,11 +906,7 @@
         <source>Show splash screen on startup (default: %u)</source>
         <translation>Näytä aloitusruutu käynnistyksen yhteydessä (oletus: %u)</translation>
     </message>
-    <message>
-        <source>Reset all settings changes made over the GUI</source>
-        <translation>Nollaa kaikki graafisen käyttöliittymän kautta tehdyt muutokset</translation>
-    </message>
-</context>
+    </context>
 <context>
     <name>Intro</name>
     <message>
