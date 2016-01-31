@@ -20,7 +20,7 @@ packages:
 - "libbz2-dev"
 reference_datetime: "2015-06-01 00:00:00"
 remotes:
-- "url": "https://github.com/bitcoin/bitcoin.git"
+- "url": "https://github.com/bitcoinclassic/bitcoinclassic.git"
   "dir": "bitcoin"
 files:
 - "MacOSX10.9.sdk.tar.gz"
@@ -120,7 +120,7 @@ script: |
     popd
 
     make deploy
-    ${WRAP_DIR}/dmg dmg Bitcoin-Core.dmg ${OUTDIR}/${DISTNAME}-osx-unsigned.dmg
+    ${WRAP_DIR}/dmg dmg Bitcoin-Classic.dmg ${OUTDIR}/${DISTNAME}-osx-unsigned.dmg
 
     cd installed
     find . -name "lib*.la" -delete
