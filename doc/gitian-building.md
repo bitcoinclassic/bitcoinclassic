@@ -366,6 +366,7 @@ COMMIT=2014_03_windows_unicode_path
 ./bin/gbuild --commit bitcoin=${COMMIT} --url bitcoin=${URL} ../bitcoin/contrib/gitian-descriptors/gitian-linux.yml
 ./bin/gbuild --commit bitcoin=${COMMIT} --url bitcoin=${URL} ../bitcoin/contrib/gitian-descriptors/gitian-win.yml
 ./bin/gbuild --commit bitcoin=${COMMIT} --url bitcoin=${URL} ../bitcoin/contrib/gitian-descriptors/gitian-osx.yml
+./bin/gbuild --commit bitcoin=${COMMIT} --url bitcoin=${URL} ../bitcoin/contrib/gitian-descriptors/gitian-linux-armhf.yml
 ```
 
 Signing externally
@@ -381,6 +382,7 @@ in `gitian.sigs` to your signing machine and do
 
 ```bash
     gpg --detach-sign ${VERSION}-linux/${SIGNER}/bitcoin-linux-build.assert
+    gpg --detach-sign ${VERSION}-linux/${SIGNER}/bitcoin-linux-armhf-build.assert
     gpg --detach-sign ${VERSION}-win/${SIGNER}/bitcoin-win-build.assert
     gpg --detach-sign ${VERSION}-osx-unsigned/${SIGNER}/bitcoin-osx-build.assert
 ```
