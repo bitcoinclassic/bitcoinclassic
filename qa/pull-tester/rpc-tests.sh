@@ -27,6 +27,7 @@ testScripts=(
     'merkle_blocks.py'
     'signrawtransactions.py'
     'walletbackup.py'
+    'blockchain.py'
 );
 testScriptsExt=(
     'bigblocks.py'

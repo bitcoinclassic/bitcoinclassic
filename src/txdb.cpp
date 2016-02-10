@@ -40,7 +40,7 @@ void static BatchWriteHashBestChain(CLevelDBBatch &batch, const uint256 &hash) {
     batch.Write(DB_BEST_BLOCK, hash);
 }
 
-CCoinsViewDB::CCoinsViewDB(size_t nCacheSize, bool fMemory, bool fWipe) : db(GetDataDir() / "chainstate", nCacheSize, fMemory, fWipe) {
+CCoinsViewDB::CCoinsViewDB(size_t nCacheSize, bool fMemory, bool fWipe) : db(GetDataDir() / "chainstate", nCacheSize, fMemory, fWipe, true) {
 }
 
 bool CCoinsViewDB::GetCoins(const uint256 &txid, CCoins &coins) const {
@@ -59,7 +59,7 @@ uint256 CCoinsViewDB::GetBestBlock() const {
 }
 
 bool CCoinsViewDB::BatchWrite(CCoinsMap &mapCoins, const uint256 &hashBlock) {
-    CLevelDBBatch batch;
+    CLevelDBBatch batch(db.GetObfuscateKey());
     size_t count = 0;
     size_t changed = 0;
     for (CCoinsMap::iterator it = mapCoins.begin(); it != mapCoins.end();) {
@@ -122,6 +122,7 @@ bool CCoinsViewDB::GetStats(CCoinsStats &stats) const {
             if (chType == DB_COINS) {
                 leveldb::Slice slValue = pcursor->value();
                 CDataStream ssValue(slValue.data(), slValue.data()+slValue.size(), SER_DISK, CLIENT_VERSION);
+                ssValue.Xor(db.GetObfuscateKey());
                 CCoins coins;
                 ssValue >> coins;
                 uint256 txhash;
@@ -155,7 +156,7 @@ bool CCoinsViewDB::GetStats(CCoinsStats &stats) const {
 }
 
 bool CBlockTreeDB::WriteBatchSync(const std::vector<std::pair<int, const CBlockFileInfo*> >& fileInfo, int nLastFile, const std::vector<const CBlockIndex*>& blockinfo) {
-    CLevelDBBatch batch;
+    CLevelDBBatch batch(GetObfuscateKey());
     for (std::vector<std::pair<int, const CBlockFileInfo*> >::const_iterator it=fileInfo.begin(); it != fileInfo.end(); it++) {
         batch.Write(make_pair(DB_BLOCK_FILES, it->first), *it->second);
     }
@@ -171,7 +172,7 @@ bool CBlockTreeDB::ReadTxIndex(const uint256 &txid, CDiskTxPos &pos) {
 }
 
 bool CBlockTreeDB::WriteTxIndex(const std::vector<std::pair<uint256, CDiskTxPos> >&vect) {
-    CLevelDBBatch batch;
+    CLevelDBBatch batch(GetObfuscateKey());
     for (std::vector<std::pair<uint256,CDiskTxPos> >::const_iterator it=vect.begin(); it!=vect.end(); it++)
         batch.Write(make_pair(DB_TXINDEX, it->first), it->second);
     return WriteBatch(batch);
@@ -208,6 +209,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts()
             if (chType == DB_BLOCK_INDEX) {
                 leveldb::Slice slValue = pcursor->value();
                 CDataStream ssValue(slValue.data(), slValue.data()+slValue.size(), SER_DISK, CLIENT_VERSION);
+                ssValue.Xor(GetObfuscateKey());
                 CDiskBlockIndex diskindex;
                 ssValue >> diskindex;
 
@@ -253,6 +255,7 @@ bool CBlockTreeDB::LoadBlockIndexGuts()
                 ssKey >> nVersion;
                 leveldb::Slice slValue = pcursor->value();
                 CDataStream ssValue(slValue.data(), slValue.data()+slValue.size(), SER_DISK, CLIENT_VERSION);
+                ssValue.Xor(GetObfuscateKey());
                 uint256 blockHash;
                 ssValue >> blockHash;
                 forkActivationMap[nVersion] = blockHash;
