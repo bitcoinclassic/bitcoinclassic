@@ -1199,6 +1199,7 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState &state, const C
         }
         LogPrint("txcost", "txcost %s size: %d sigops: %d sighash: %d\n",
                  hash.ToString(), nSize, costTracker.GetSigOps(), costTracker.GetSighashBytes());
+        entry.SetSighashBytes(costTracker.GetSighashBytes());
 
         // Check again against just the consensus-critical mandatory script
         // verification flags, in case of bugs in the standard flags that cause

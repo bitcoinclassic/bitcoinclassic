@@ -69,6 +69,7 @@ private:
     CAmount inChainInputValue; //! Sum of all txin values that are already in blockchain
     bool spendsCoinbase; //! keep track of transactions that spend a coinbase
     unsigned int sigOpCount; //! Legacy sig ops plus P2SH sig op count
+    unsigned int sighashBytes; //! Signature-hash byte count.
     int64_t feeDelta; //! Used for determining the priority of the transaction for mining in a block
 
     // Information about descendants of this transaction that are in the
@@ -101,6 +102,9 @@ public:
     unsigned int GetSigOpCount() const { return sigOpCount; }
     int64_t GetModifiedFee() const { return nFee + feeDelta; }
     size_t DynamicMemoryUsage() const { return nUsageSize; }
+
+    void SetSighashBytes(unsigned int shb) { sighashBytes = shb; }
+    unsigned int GetSighashBytes() const { return sighashBytes; }
 
     // Adjusts the descendant state, if this entry is not dirty.
     void UpdateState(int64_t modifySize, CAmount modifyFee, int64_t modifyCount);
