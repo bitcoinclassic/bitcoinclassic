@@ -75,12 +75,12 @@ Maintainers will take into consideration if a patch is in line with the general 
 
 In general, all pull requests must:
 
-  - have a clear use case, fix a demonstrable bug or serve the greater good of the project (for example refactoring for modularisation);
-  - be well peer reviewed;
-  - have unit tests and functional tests where appropriate;
-  - follow code style guidelines;
-  - not break the existing test suite;
-  - where bugs are fixed, where possible, there should be unit tests demonstrating the bug and also proving the fix. This helps prevent regression.
+  - Have a clear use case, fix a demonstrable bug or serve the greater good of the project (for example refactoring for modularisation);
+  - Be well peer reviewed;
+  - Have unit tests and functional tests where appropriate;
+  - Follow code style guidelines;
+  - Not break the existing test suite;
+  - Where bugs are fixed, where possible, there should be unit tests demonstrating the bug and also proving the fix. This helps prevent regression.
 
 Patches that change Bitcoin consensus rules are considerably more involved than normal because they affect the entire ecosystem and so must be preceded by extensive mailing list discussions and have a numbered BIP. While each case will be different, one should be prepared to expend more time and effort than for other kinds of patches because of increased peer review and consensus building requirements.
 
