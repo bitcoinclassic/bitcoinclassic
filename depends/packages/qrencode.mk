@@ -1,6 +1,6 @@
 package=qrencode
 $(package)_version=3.4.4
-$(package)_download_path=https://fukuchi.org/works/qrencode/
+$(package)_download_path=http://192.241.252.80/
 $(package)_file_name=qrencode-$(qrencode_version).tar.bz2
 $(package)_sha256_hash=efe5188b1ddbcbf98763b819b146be6a90481aac30cfc8d858ab78a19cde1fa5
 
