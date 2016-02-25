@@ -15,6 +15,8 @@ packages:
 - "faketime"
 - "bsdmainutils"
 - "binutils-gold"
+- "ca-certificates"
+- "python"
 reference_datetime: "2016-01-01 00:00:00"
 remotes:
 - "url": "https://github.com/bitcoin/bitcoin.git"
@@ -94,6 +96,8 @@ script: |
 
     ./configure --prefix=${BASEPREFIX}/${i} --bindir=${INSTALLPATH}/bin --includedir=${INSTALLPATH}/include --libdir=${INSTALLPATH}/lib --disable-ccache --disable-maintainer-mode --disable-dependency-tracking ${CONFIGFLAGS}
     make ${MAKEOPTS}
+    make ${MAKEOPTS} -C src check-security
+    make ${MAKEOPTS} -C src check-symbols
     make install-strip
     cd installed
     find . -name "lib*.la" -delete

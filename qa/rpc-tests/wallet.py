@@ -3,7 +3,6 @@
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import *
 
@@ -50,7 +49,6 @@ class WalletTest (BitcoinTestFramework):
         assert_equal(self.nodes[2].getbalance(), 0)
 
         # Send 21 BTC from 0 to 2 using sendtoaddress call.
-        # Second transaction will be child of first, and will require a fee
         self.nodes[0].sendtoaddress(self.nodes[2].getnewaddress(), 11)
         self.nodes[0].sendtoaddress(self.nodes[2].getnewaddress(), 10)
 
@@ -82,7 +80,7 @@ class WalletTest (BitcoinTestFramework):
             inputs = []
             outputs = {}
             inputs.append({ "txid" : utxo["txid"], "vout" : utxo["vout"]})
-            outputs[self.nodes[2].getnewaddress("from1")] = utxo["amount"]
+            outputs[self.nodes[2].getnewaddress("from1")] = utxo["amount"] - 3
             raw_tx = self.nodes[0].createrawtransaction(inputs, outputs)
             txns_to_send.append(self.nodes[0].signrawtransaction(raw_tx))
 
@@ -95,8 +93,8 @@ class WalletTest (BitcoinTestFramework):
         self.sync_all()
 
         assert_equal(self.nodes[0].getbalance(), 0)
-        assert_equal(self.nodes[2].getbalance(), 100)
-        assert_equal(self.nodes[2].getbalance("from1"), 100-21)
+        assert_equal(self.nodes[2].getbalance(), 94)
+        assert_equal(self.nodes[2].getbalance("from1"), 94-21)
 
         # Send 10 BTC normal
         address = self.nodes[0].getnewaddress("test")
@@ -105,7 +103,7 @@ class WalletTest (BitcoinTestFramework):
         txid = self.nodes[2].sendtoaddress(address, 10, "", "", False)
         self.nodes[2].generate(1)
         self.sync_all()
-        node_2_bal = self.check_fee_amount(self.nodes[2].getbalance(), Decimal('90'), fee_per_byte, count_bytes(self.nodes[2].getrawtransaction(txid)))
+        node_2_bal = self.check_fee_amount(self.nodes[2].getbalance(), Decimal('84'), fee_per_byte, count_bytes(self.nodes[2].getrawtransaction(txid)))
         assert_equal(self.nodes[0].getbalance(), Decimal('10'))
 
         # Send 10 BTC with subtract fee from amount
@@ -145,7 +143,7 @@ class WalletTest (BitcoinTestFramework):
         sync_blocks(self.nodes)
 
         relayed = self.nodes[0].resendwallettransactions()
-        assert_equal(set(relayed), set([txid1, txid2]))
+        assert_equal(set(relayed), {txid1, txid2})
         sync_mempools(self.nodes)
 
         assert(txid1 in self.nodes[3].getrawmempool())
@@ -265,6 +263,7 @@ class WalletTest (BitcoinTestFramework):
             '-salvagewallet',
         ]
         for m in maintenance:
+            print "check " + m
             stop_nodes(self.nodes)
             wait_bitcoinds()
             self.nodes = start_nodes(3, self.options.tmpdir, [[m]] * 3)

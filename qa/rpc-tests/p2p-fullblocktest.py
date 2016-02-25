@@ -1,6 +1,5 @@
 #!/usr/bin/env python2
-
-#
+# Copyright (c) 2015 The Bitcoin Core developers
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #
@@ -8,14 +7,10 @@
 from test_framework.test_framework import ComparisonTestFramework
 from test_framework.util import *
 from test_framework.comptool import TestManager, TestInstance, RejectResult
-from test_framework.mininode import *
 from test_framework.blocktools import *
-import logging
-import copy
 import time
-import numbers
 from test_framework.key import CECKey
-from test_framework.script import CScript, CScriptOp, SignatureHash, SIGHASH_ALL, OP_TRUE, OP_FALSE
+from test_framework.script import CScript, SignatureHash, SIGHASH_ALL, OP_TRUE, OP_FALSE
 
 class PreviousSpendableOutput(object):
     def __init__(self, tx = CTransaction(), n = -1):

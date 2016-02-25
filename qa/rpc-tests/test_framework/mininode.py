@@ -231,6 +231,14 @@ def ser_int_vector(l):
         r += struct.pack("<i", i)
     return r
 
+# Deserialize from a hex string representation (eg from RPC)
+def FromHex(obj, hex_string):
+    obj.deserialize(cStringIO.StringIO(binascii.unhexlify(hex_string)))
+    return obj
+
+# Convert a binary-serializable object to hex (eg for submission via RPC)
+def ToHex(obj):
+    return binascii.hexlify(obj.serialize()).decode('utf-8')
 
 # Objects that map to bitcoind objects, which can be serialized/deserialized
 
@@ -536,7 +544,7 @@ class CBlock(CBlockHeader):
         return True
 
     def solve(self):
-        self.calc_sha256()
+        self.rehash()
         target = uint256_from_compact(self.nBits)
         while self.sha256 > target:
             self.nNonce += 1
@@ -1004,6 +1012,18 @@ class msg_reject(object):
 class NodeConnCB(object):
     def __init__(self):
         self.verack_received = False
+        # deliver_sleep_time is helpful for debugging race conditions in p2p
+        # tests; it causes message delivery to sleep for the specified time
+        # before acquiring the global lock and delivering the next message.
+        self.deliver_sleep_time = None
+
+    def set_deliver_sleep_time(self, value):
+        with mininode_lock:
+            self.deliver_sleep_time = value
+
+    def get_deliver_sleep_time(self):
+        with mininode_lock:
+            return self.deliver_sleep_time
 
     # Spin until verack message is received from the node.
     # Tests may want to use this as a signal that the test can begin.
@@ -1017,6 +1037,9 @@ class NodeConnCB(object):
             time.sleep(0.05)
 
     def deliver(self, conn, message):
+        deliver_sleep = self.get_deliver_sleep_time()
+        if deliver_sleep is not None:
+            time.sleep(deliver_sleep)
         with mininode_lock:
             try:
                 getattr(self, 'on_' + message.command)(conn, message)
