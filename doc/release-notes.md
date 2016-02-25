@@ -137,14 +137,14 @@ Opt-in Replace-by-fee transactions
 ----------------------------------
 
 It is now possible to replace transactions in the transaction memory pool of
-Bitcoin Core 0.12 nodes. Bitcoin Core will only allow replacement of
+Bitcoin Classic 0.12 nodes. Bitcoin Classic will only allow replacement of
 transactions which have any of their inputs' `nSequence` number set to less
 than `0xffffffff - 1`.  Moreover, a replacement transaction may only be
 accepted when it pays sufficient fee, as described in [BIP 125]
 (https://github.com/bitcoin/bips/blob/master/bip-0125.mediawiki).
 
-Transaction replacement can be disabled with a new command line option,
-`-mempoolreplacement=0`.  Transactions signaling replacement under BIP125 will
+Transaction replacement can be enabled with a new command line option,
+`-mempoolreplacement=1`.  Transactions signaling replacement under BIP125 will
 still be allowed into the mempool in this configuration, but replacements will
 be rejected.  This option is intended for miners who want to continue the
 transaction selection behavior of previous releases.
@@ -159,7 +159,7 @@ updated RPC calls `gettransaction` and `listtransactions`, which now have an
 additional field in the output indicating if a transaction is replaceable under
 BIP125 ("bip125-replaceable").
 
-Note that the wallet in Bitcoin Core 0.12 does not yet have support for
+Note that the wallet in Bitcoin Classic 0.12 does not yet have support for
 creating transactions that would be replaceable under BIP 125.
 
 
