@@ -120,8 +120,8 @@ than `0xffffffff - 1`.  Moreover, a replacement transaction may only be
 accepted when it pays sufficient fee, as described in [BIP 125]
 (https://github.com/bitcoin/bips/blob/master/bip-0125.mediawiki).
 
-Transaction replacement can be disabled with a new command line option,
-`-mempoolreplacement=0`.  Transactions signaling replacement under BIP125 will
+Transaction replacement can be enabled with a new command line option,
+`-mempoolreplacement=1`.  Transactions signaling replacement under BIP125 will
 still be allowed into the mempool in this configuration, but replacements will
 be rejected.  This option is intended for miners who want to continue the
 transaction selection behavior of previous releases.
@@ -139,6 +139,8 @@ BIP125 ("bip125-replaceable").
 Note that the wallet in Bitcoin Classic 0.12 does not yet have support for
 creating transactions that would be replaceable under BIP 125.
 
+*This option is only for compatible with Bitcoin Core 0.12, and will be removed in
+latter version.*
 
 RPC: Random-cookie RPC authentication
 -------------------------------------
