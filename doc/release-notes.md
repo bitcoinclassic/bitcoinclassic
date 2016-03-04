@@ -87,15 +87,15 @@ peers.
 Memory pool limiting
 --------------------
 
-Previous versions of Bitcoin Core had their mempool limited by checking
+Previous versions of Bitcoin Classic had their mempool limited by checking
 a transaction's fees against the node's minimum relay fee. There was no
 upper bound on the size of the mempool and attackers could send a large
 number of transactions paying just slighly more than the default minimum
 relay fee to crash nodes with relatively low RAM. A temporary workaround
-for previous versions of Bitcoin Core was to raise the default minimum
+for previous versions of Bitcoin Classic was to raise the default minimum
 relay fee.
 
-Bitcoin Core 0.12 will have a strict maximum size on the mempool. The
+Bitcoin Classic 0.12 will have a strict maximum size on the mempool. The
 default value is 300 MB and can be configured with the `-maxmempool`
 parameter. Whenever a transaction would cause the mempool to exceed
 its maximum size, the transaction that (along with in-mempool descendants) has
@@ -104,7 +104,7 @@ minimum relay feerate will be increased to match this feerate plus the initial
 minimum relay feerate. The initial minimum relay feerate is set to
 1000 satoshis per kB.
 
-Bitcoin Core 0.12 also introduces new default policy limits on the length and
+Bitcoin Classic 0.12 also introduces new default policy limits on the length and
 size of unconfirmed transaction chains that are allowed in the mempool
 (generally limiting the length of unconfirmed chains to 25 transactions, with a
 total size of 101 KB).  These limits can be overriden using command line
@@ -114,7 +114,7 @@ Opt-in Replace-by-fee transactions
 ----------------------------------
 
 It is now possible to replace transactions in the transaction memory pool of
-Bitcoin Core 0.12 nodes. Bitcoin Core will only allow replacement of
+Bitcoin Classic 0.12 nodes. Bitcoin Classic will only allow replacement of
 transactions which have any of their inputs' `nSequence` number set to less
 than `0xffffffff - 1`.  Moreover, a replacement transaction may only be
 accepted when it pays sufficient fee, as described in [BIP 125]
@@ -136,7 +136,7 @@ updated RPC calls `gettransaction` and `listtransactions`, which now have an
 additional field in the output indicating if a transaction is replaceable under
 BIP125 ("bip125-replaceable").
 
-Note that the wallet in Bitcoin Core 0.12 does not yet have support for
+Note that the wallet in Bitcoin Classic 0.12 does not yet have support for
 creating transactions that would be replaceable under BIP 125.
 
 
@@ -168,14 +168,14 @@ three bytes overhead)
 Relay and Mining: Priority transactions
 ---------------------------------------
 
-Bitcoin Core has a heuristic 'priority' based on coin value and age. This
+Bitcoin Classic has a heuristic 'priority' based on coin value and age. This
 calculation is used for relaying of transactions which do not meet pay the
 minimum relay fee, and can be used as an alternative way of sorting
-transactions for mined blocks. Bitcoin Core will relay transactions with
+transactions for mined blocks. Bitcoin Classic will relay transactions with
 insufficient fees depending on the setting of `-limitfreerelay=<r>` (default:
 `r=15` kB per minute) and `-blockprioritysize=<s>`.
 
-In Bitcoin Core 0.12, when mempool limit has been reached a higher minimum
+In Bitcoin Classic 0.12, when mempool limit has been reached a higher minimum
 relay fee takes effect to limit memory usage. Transactions which do not meet
 this higher effective minimum relay fee will not be relayed or mined even if
 they rank highly according to the priority heuristic.
@@ -196,7 +196,7 @@ Note, however, that if mining priority transactions is left disabled, the
 priority delta will be ignored and only the fee metric will be effective.
 
 This internal automatic prioritization handling is being considered for removal
-entirely in Bitcoin Core 0.13, and it is at this time undecided whether the
+entirely in Bitcoin Classic 0.13, and it is at this time undecided whether the
 more accurate priority calculation for chained unconfirmed transactions will be
 restored. Community direction on this topic is particularly requested to help
 set project priorities.
@@ -206,15 +206,15 @@ Automatically use Tor hidden services
 
 Starting with Tor version 0.2.7.1 it is possible, through Tor's control socket
 API, to create and destroy 'ephemeral' hidden services programmatically.
-Bitcoin Core has been updated to make use of this.
+Bitcoin Classic has been updated to make use of this.
 
 This means that if Tor is running (and proper authorization is available),
-Bitcoin Core automatically creates a hidden service to listen on, without
-manual configuration. Bitcoin Core will also use Tor automatically to connect
+Bitcoin Classic automatically creates a hidden service to listen on, without
+manual configuration. Bitcoin Classic will also use Tor automatically to connect
 to other .onion nodes if the control socket can be successfully opened. This
 will positively affect the number of available .onion nodes and their usage.
 
-This new feature is enabled by default if Bitcoin Core is listening, and
+This new feature is enabled by default if Bitcoin Classic is listening, and
 a connection to Tor can be made. It can be configured with the `-listenonion`,
 `-torcontrol` and `-torpassword` settings. To show verbose debugging
 information, pass `-debug=tor`.
@@ -236,7 +236,7 @@ transaction fees.
 
 Users can decide to pay a predefined fee rate by setting `-paytxfee=<n>`
 (or `settxfee <n>` rpc during runtime). A value of `n=0` signals Bitcoin
-Core to use floating fees. By default, Bitcoin Core will use floating
+Classic to use floating fees. By default, Bitcoin Classic will use floating
 fees.
 
 Based on past transaction data, floating fees approximate the fees
@@ -247,9 +247,9 @@ Sometimes, it is not possible to give good estimates, or an estimate
 at all. Therefore, a fallback value can be set with `-fallbackfee=<f>`
 (default: `0.0002` BTC/kB).
 
-At all times, Bitcoin Core will cap fees at `-maxtxfee=<x>` (default:
+At all times, Bitcoin Classic will cap fees at `-maxtxfee=<x>` (default:
 0.10) BTC.
-Furthermore, Bitcoin Core will never create transactions smaller than
+Furthermore, Bitcoin Classic will never create transactions smaller than
 the current minimum relay fee.
 Finally, a user can set the minimum fee rate for all transactions with
 `-mintxfee=<i>`, which defaults to 1000 satoshis per kB.
