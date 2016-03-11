@@ -1,5 +1,5 @@
 [Unit]
-Description=Bitcoin Classic distributed currency daemon
+Description=Bitcoin YOLO distributed currency daemon
 After=network.target
 
 [Service]

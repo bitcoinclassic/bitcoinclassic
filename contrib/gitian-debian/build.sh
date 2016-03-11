@@ -53,7 +53,7 @@ mkdir DEBIAN
 cat <<EOF >DEBIAN/control
 Package: bitcoincl
 Architecture: amd64
-Description: Bitcoin Classic is a fully verifying Bitcoin node implementation based on the sources of Bitcoin Core.
+Description: Bitcoin YOLO is a fully verifying Bitcoin node implementation based on the sources of Bitcoin Core.
 Maintainer: Steve Myers <steven.myers@gmail.com>
 Version: $realver
 Depends: debconf, adduser, ntp
