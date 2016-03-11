@@ -13,7 +13,7 @@
  * for both bitcoind and bitcoin-classic, to make it harder for attackers to
  * target servers or GUI users specifically.
  */
-const std::string CLIENT_NAME("Classic");
+const std::string CLIENT_NAME("YOLO");
 
 /**
  * Client version number

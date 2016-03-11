@@ -171,7 +171,7 @@ class DeploymentInfo(object):
     def detectQtPath(self, frameworkDirectory):
         parentDir = os.path.dirname(frameworkDirectory)
         if os.path.exists(os.path.join(parentDir, "translations")):
-            # Classic layout, e.g. "/usr/local/Trolltech/Qt-4.x.x"
+            # YOLO layout, e.g. "/usr/local/Trolltech/Qt-4.x.x"
             self.qtPath = parentDir
         elif os.path.exists(os.path.join(parentDir, "share", "qt4", "translations")):
             # MacPorts layout, e.g. "/opt/local/share/qt4"
@@ -757,7 +757,7 @@ if config.dmg is not None:
     
     if fancy is None:
         try:
-            runHDIUtil("create", dmg_name, srcfolder="dist", format="UDBZ", volname="Bitcoin-Classic", ov=True)
+            runHDIUtil("create", dmg_name, srcfolder="dist", format="UDBZ", volname="Bitcoin-YOLO", ov=True)
         except subprocess.CalledProcessError as e:
             sys.exit(e.returncode)
     else:
@@ -772,7 +772,7 @@ if config.dmg is not None:
         if verbose >= 3:
             print "Creating temp image for modification..."
         try:
-            runHDIUtil("create", dmg_name + ".temp", srcfolder="dist", format="UDRW", size=size, volname="Bitcoin-Classic", ov=True)
+            runHDIUtil("create", dmg_name + ".temp", srcfolder="dist", format="UDRW", size=size, volname="Bitcoin-YOLO", ov=True)
         except subprocess.CalledProcessError as e:
             sys.exit(e.returncode)
         
@@ -837,7 +837,7 @@ if config.dmg is not None:
                 items_positions.append(itemscript.substitute(params))
 
         params = {
-            "disk" : "Bitcoin-Classic",
+            "disk" : "Bitcoin-YOLO",
             "window_bounds" : "300,300,800,620",
             "icon_size" : "96",
             "background_commands" : "",

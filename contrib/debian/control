@@ -1,7 +1,7 @@
 Source: bitcoinclassic
 Section: utils
 Priority: optional
-Maintainer: The Classic Devs <packages@bitcoinclassic.com>
+Maintainer: The YOLO Devs <packages@bitcoinclassic.com>
 Uploaders: Micah Anderson <micah@debian.org>, Jon Rumion <yamamushi@gmail.com>
 Build-Depends: debhelper,
  devscripts,

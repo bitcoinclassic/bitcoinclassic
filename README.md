@@ -1,4 +1,4 @@
-Bitcoin Classic integration/staging tree
+Bitcoin YOLO integration/staging tree
 =====================================
 
 [![Build Status](https://travis-ci.org/bitcoinclassic/bitcoinclassic.svg?branch=master)](https://travis-ci.org/bitcoinclassic/bitcoinclassic)
@@ -14,21 +14,21 @@ with no central authority: managing transactions and issuing money are carried
 out collectively by the network.
 
 For more information, as well as an immediately useable, binary version of
-the Bitcoin Classic software, see https://bitcoinclassic.com.
+the Bitcoin YOLO software, see https://bitcoinclassic.com.
 
-What is Bitcoin Classic?
+What is Bitcoin YOLO?
 ------------------------
 
-Bitcoin Classic is currently a one-time increase in total amount of transaction data permitted in a block from 1MB to 2MB, with limits on signature operations and hashing. We will have ports for master and 0.11.2, so that miners and businesses can upgrade to 2 MB blocks from any recent bitcoin software version they run.
+Bitcoin YOLO is currently a one-time increase in total amount of transaction data permitted in a block from 1MB to 2MB, with limits on signature operations and hashing. We will have ports for master and 0.11.2, so that miners and businesses can upgrade to 2 MB blocks from any recent bitcoin software version they run.
 
 Read the [block size increase BIP](https://github.com/gavinandresen/bips/blob/92e1efd0493c1cbde47304c9711f13f413cc9099/bip-bump2mb.mediawiki) for more information.
 
-In the future Bitcoin Classic will continue to release updates that are in line with Satoshi’s whitepaper & vision, and are agreed upon by the community.
+In the future Bitcoin YOLO will continue to release updates that are in line with Satoshi’s whitepaper & vision, and are agreed upon by the community.
 
 License
 -------
 
-Bitcoin Classic is released under the terms of the MIT license. See [COPYING](COPYING) for more
+Bitcoin YOLO is released under the terms of the MIT license. See [COPYING](COPYING) for more
 information or see https://opensource.org/licenses/MIT.
 
 Development Process
@@ -36,7 +36,7 @@ Development Process
 
 The `master` branch is regularly built and tested, but is not guaranteed to be
 completely stable. [Tags](https://github.com/bitcoinclassic/bitcoinclassic/tags) are created
-regularly to indicate new official, stable release versions of Bitcoin Classic.
+regularly to indicate new official, stable release versions of Bitcoin YOLO.
 
 The contribution workflow is described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -47,7 +47,7 @@ Community
 
 - Primary Website: https://bitcoinclassic.com/
 - Slack: http://invite.bitcoinclassic.com/
-- Reddit: https://www.reddit.com/r/Bitcoin_Classic/
+- Reddit: https://www.reddit.com/r/Bitcoin_YOLO/
 - GitHub: https://github.com/bitcoinclassic
 - ConsiderIt (issue voting): https://bitcoinclassic.consider.it/
 
@@ -83,7 +83,7 @@ Translations
 ------------
 
 Changes to translations as well as new translations can be submitted to
-[Bitcoin Classic's Transifex page](https://www.transifex.com/bitcoinclassic/bitcoinclassic/).
+[Bitcoin YOLO's Transifex page](https://www.transifex.com/bitcoinclassic/bitcoinclassic/).
 
 Translations are periodically pulled from Transifex and merged into the git repository. See the
 [translation process](doc/translation_process.md) for details on how this works.

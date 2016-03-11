@@ -1,4 +1,4 @@
-Bitcoin Classic version 0.12.0 is now available from:
+Bitcoin YOLO version 0.12.0 is now available from:
 
   <https://>
 
@@ -26,7 +26,7 @@ Downgrade warning
 
 Because release 0.10.0 and later makes use of headers-first synchronization and
 parallel block download (see further), the block files and databases are not
-backwards-compatible with pre-0.10 versions of Bitcoin Classic or other software:
+backwards-compatible with pre-0.10 versions of Bitcoin YOLO or other software:
 
 * Blocks will be stored on disk out of order (in the order they are
 received, really), which makes it incompatible with some tools or
