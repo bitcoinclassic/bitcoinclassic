@@ -119,9 +119,13 @@ namespace {
             if (pa->nChainWork > pb->nChainWork) return false;
             if (pa->nChainWork < pb->nChainWork) return true;
 
+            // ... then by validation status, ...
+            if (pa->IsValid(BLOCK_VALID_MASK) && !pb->IsValid(BLOCK_VALID_MASK)) return false;
+            if (!pa->IsValid(BLOCK_VALID_MASK) && pb->IsValid(BLOCK_VALID_MASK)) return true;
+
             // ... then by earliest time received, ...
-            if (pa->nSequenceId < pb->nSequenceId) return false;
-            if (pa->nSequenceId > pb->nSequenceId) return true;
+            if (pa->GetFirstSeenTime() < pb->GetFirstSeenTime()) return false;
+            if (pa->GetFirstSeenTime() > pb->GetFirstSeenTime()) return true;
 
             // Use pointer address as tie breaker (should only happen with blocks
             // loaded from disk, as those all have id 0).
@@ -156,14 +160,6 @@ namespace {
      *  or if we allocate more file space when we're in prune mode
      */
     bool fCheckForPruning = false;
-
-    /**
-     * Every received block is assigned a unique and increasing identifier, so we
-     * know which one to give priority in case of a fork.
-     */
-    CCriticalSection cs_nBlockSequenceId;
-    /** Blocks loaded from disk are assigned id 0, so start the counter at 1. */
-    uint32_t nBlockSequenceId = 1;
 
     /**
      * Sources of received blocks, saved to be able to send them reject
@@ -1328,7 +1324,7 @@ void static InvalidChainFound(CBlockIndex* pindexNew)
     CheckForkWarningConditions();
 }
 
-void static InvalidBlockFound(CBlockIndex *pindex, const CValidationState &state) {
+void static InvalidBlockFound(const CBlock& block, CBlockIndex *pindex, const CValidationState &state) {
     int nDoS = 0;
     if (state.IsInvalid(nDoS)) {
         std::map<uint256, NodeId>::iterator it = mapBlockSource.find(pindex->GetBlockHash());
@@ -1345,6 +1341,21 @@ void static InvalidBlockFound(CBlockIndex *pindex, const CValidationState &state
         setDirtyBlockIndex.insert(pindex);
         setBlockIndexCandidates.erase(pindex);
         InvalidChainFound(pindex);
+
+        // Stop mining on pindexBestHeader if we discover it is invalid:
+        if (pindexBestHeader && !pindexBestHeader->IsValid(BLOCK_VALID_TREE)) {
+            pindexBestHeader = chainActive.Tip();
+            cvBlockChange.notify_all();
+        }
+        // Tell any interested peers about the invalid block
+        uint256 hash = pindex->GetBlockHash();
+        LOCK(cs_vNodes);
+        BOOST_FOREACH(CNode* pnode, vNodes) {
+            if (pnode->waitingForBlock.count(hash)) {
+                pnode->waitingForBlock.erase(hash);
+                pnode->PushMessage(NetMsgType::INVALIDBLOCK, block);
+            }
+        }
     }
 }
 
@@ -2281,7 +2292,7 @@ bool static ConnectTip(CValidationState& state, const CChainParams& chainparams,
         GetMainSignals().BlockChecked(*pblock, state);
         if (!rv) {
             if (state.IsInvalid())
-                InvalidBlockFound(pindexNew, state);
+                InvalidBlockFound(*pblock, pindexNew, state);
             return error("ConnectTip(): ConnectBlock %s failed", pindexNew->GetBlockHash().ToString());
         }
         mapBlockSource.erase(pindexNew->GetBlockHash());
@@ -2625,12 +2636,8 @@ CBlockIndex* AddToBlockIndex(const CBlockHeader& block)
         return it->second;
 
     // Construct new block index object
-    CBlockIndex* pindexNew = new CBlockIndex(block);
+    CBlockIndex* pindexNew = new CBlockIndex(block, GetTime());
     assert(pindexNew);
-    // We assign the sequence id to blocks only when the full data is available,
-    // to avoid miners withholding blocks but broadcasting headers, to get a
-    // competitive advantage.
-    pindexNew->nSequenceId = 0;
     BlockMap::iterator mi = mapBlockIndex.insert(make_pair(hash, pindexNew)).first;
     pindexNew->phashBlock = &((*mi).first);
     BlockMap::iterator miPrev = mapBlockIndex.find(block.hashPrevBlock);
@@ -2642,7 +2649,7 @@ CBlockIndex* AddToBlockIndex(const CBlockHeader& block)
     }
     pindexNew->nChainWork = (pindexNew->pprev ? pindexNew->pprev->nChainWork : 0) + GetBlockProof(*pindexNew);
     pindexNew->RaiseValidity(BLOCK_VALID_TREE);
-    if (pindexBestHeader == NULL || pindexBestHeader->nChainWork < pindexNew->nChainWork)
+    if (pindexBestHeader == NULL || !pindexBestHeader->IsValid(BLOCK_VALID_TREE) || pindexBestHeader->nChainWork < pindexNew->nChainWork)
         pindexBestHeader = pindexNew;
 
     setDirtyBlockIndex.insert(pindexNew);
@@ -2672,10 +2679,6 @@ bool ReceivedBlockTransactions(const CBlock &block, CValidationState& state, CBl
             CBlockIndex *pindex = queue.front();
             queue.pop_front();
             pindex->nChainTx = (pindex->pprev ? pindex->pprev->nChainTx : 0) + pindex->nTx;
-            {
-                LOCK(cs_nBlockSequenceId);
-                pindex->nSequenceId = nBlockSequenceId++;
-            }
             if (chainActive.Tip() == NULL || !setBlockIndexCandidates.value_comp()(pindex, chainActive.Tip())) {
                 setBlockIndexCandidates.insert(pindex);
             }
@@ -3102,7 +3105,7 @@ bool ProcessNewBlock(CValidationState& state, const CChainParams& chainparams, c
 bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams, const CBlock& block, CBlockIndex* pindexPrev, bool fCheckPOW, bool fCheckMerkleRoot)
 {
     AssertLockHeld(cs_main);
-    assert(pindexPrev && pindexPrev == chainActive.Tip());
+    assert(pindexPrev);
     if (fCheckpointsEnabled && !CheckIndexAgainstCheckpoint(pindexPrev, state, chainparams, block.GetHash()))
         return error("%s: CheckIndexAgainstCheckpoint(): %s", __func__, state.GetRejectReason().c_str());
 
@@ -3118,7 +3121,7 @@ bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams,
         return false;
     if (!ContextualCheckBlock(block, state, pindexPrev))
         return false;
-    if (!ConnectBlock(block, state, &indexDummy, viewNew, true))
+    if (pindexPrev == chainActive.Tip() && !ConnectBlock(block, state, &indexDummy, viewNew, true))
         return false;
     assert(state.IsValid());
 
@@ -3518,7 +3521,6 @@ void UnloadBlockIndex()
     mapBlocksUnlinked.clear();
     vinfoBlockFile.clear();
     nLastBlockFile = 0;
-    nBlockSequenceId = 1;
     mapBlockSource.clear();
     mapBlocksInFlight.clear();
     nQueuedValidatedHeaders = 0;
@@ -3745,7 +3747,6 @@ void static CheckBlockIndex(const Consensus::Params& consensusParams)
             assert(pindex->GetBlockHash() == consensusParams.hashGenesisBlock); // Genesis block's hash must match.
             assert(pindex == chainActive.Genesis()); // The current active chain's genesis block must be this block.
         }
-        if (pindex->nChainTx == 0) assert(pindex->nSequenceId == 0);  // nSequenceId can't be set for blocks that aren't linked
         // VALID_TRANSACTIONS is equivalent to nTx > 0 for all nodes (whether or not pruning has occurred).
         // HAVE_DATA is only equivalent to nTx > 0 (or VALID_TRANSACTIONS) if no pruning has occurred.
         if (!fHavePruned) {
@@ -3980,11 +3981,32 @@ bool static AlreadyHave(const CInv& inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main)
 
 void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParams)
 {
+    LOCK(cs_main);
+
+    // See if any blocks in waitingForBlock have been received and have
+    // been fully validated and are ready to be sent
+    std::map<uint256, int>::iterator w_it = pfrom->waitingForBlock.begin();
+    while (w_it != pfrom->waitingForBlock.end()) {
+        BlockMap::iterator mi = mapBlockIndex.find(w_it->first);
+        assert(mi != mapBlockIndex.end());
+        CBlockIndex* pindex = mi->second;
+        if (pindex->IsValid(BLOCK_VALID_SCRIPTS)) {
+            uint256 hash = w_it->first;
+            pfrom->vRecvGetData.push_back(CInv(w_it->second, hash));
+            ++w_it;
+            pfrom->waitingForBlock.erase(hash);
+        } else if (GetTime() - pindex->GetFirstSeenTime() > 30) {
+            uint256 hash = w_it->first;
+            ++w_it;
+            pfrom->waitingForBlock.erase(hash); // old entries timeout
+        } else {
+            ++w_it;
+        }
+    }
+
     std::deque<CInv>::iterator it = pfrom->vRecvGetData.begin();
 
     vector<CInv> vNotFound;
-
-    LOCK(cs_main);
 
     while (it != pfrom->vRecvGetData.end()) {
         // Don't bother if send buffer is too full to respond anyway
@@ -4004,7 +4026,12 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
                 {
                     if (chainActive.Contains(mi->second)) {
                         send = true;
-                    } else {
+                    }
+                    else if (! (mi->second->nStatus & BLOCK_HAVE_DATA) ) {
+                        // We've got the header, but don't have the block data yet.
+                        pfrom->waitingForBlock[inv.hash] = inv.type;
+                    }
+                    else {
                         static const int nOneMonth = 30 * 24 * 60 * 60;
                         // To prevent fingerprinting attacks, only send blocks outside of the active
                         // chain if they are valid, and no more than a month older (both in time, and in
@@ -4723,6 +4750,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         }
 
         CBlockIndex *pindexLast = NULL;
+        uint256 lastBestHeaderHash = pindexBestHeader ? pindexBestHeader->GetBlockHash() : uint256();
         BOOST_FOREACH(const CBlockHeader& header, headers) {
             CValidationState state;
             if (pindexLast != NULL && header.hashPrevBlock != pindexLast->GetBlockHash()) {
@@ -4741,6 +4769,28 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
         if (pindexLast)
             UpdateBlockAvailability(pfrom->GetId(), pindexLast->GetBlockHash());
+
+        if (pindexBestHeader && lastBestHeaderHash != pindexBestHeader->GetBlockHash()) {
+            // Got a better best-header
+            cvBlockChange.notify_all();
+            uiInterface.NotifyBlockHeader(pindexBestHeader);
+
+            // Relay more-PoW headers to peers right away
+            vector<CBlock> vHeaders;
+            BOOST_FOREACH(const CBlockHeader& header, headers) {
+                BlockMap::iterator it = mapBlockIndex.find(header.GetHash());
+                if (chainActive.Tip()->nChainWork < it->second->nChainWork) // Just headers past current tip
+                    vHeaders.push_back(header);
+            }
+            LOCK(cs_vNodes);
+            BOOST_FOREACH(CNode* pnode, vNodes) {
+                CNodeState* s = State(pnode->GetId());
+                if (s && s->fPreferHeaders && !PeerHasHeader(s, pindexBestHeader)) {
+                    s->pindexBestHeaderSent = pindexBestHeader;
+                    pnode->PushMessage(NetMsgType::HEADERS, vHeaders);
+                }
+            }
+        }
 
         if (nCount == MAX_HEADERS_RESULTS && pindexLast) {
             // Headers message had its maximum size; the peer may have more headers.
@@ -4817,19 +4867,48 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         // conditions in AcceptBlock().
         bool forceProcessing = pfrom->fWhitelisted && !IsInitialBlockDownload();
         ProcessNewBlock(state, chainparams, pfrom, &block, forceProcessing, NULL);
-        int nDoS;
-        if (state.IsInvalid(nDoS)) {
-            assert (state.GetRejectCode() < REJECT_INTERNAL); // Blocks are never rejected with internal reject codes
-            pfrom->PushMessage(NetMsgType::REJECT, strCommand, (unsigned char)state.GetRejectCode(),
-                               state.GetRejectReason().substr(0, MAX_REJECT_MESSAGE_LENGTH), inv.hash);
-            if (nDoS > 0) {
-                LOCK(cs_main);
-                Misbehaving(pfrom->GetId(), nDoS);
-            }
-        }
-
+        // Note: DoS-banning is done in InvalidBlockFound.
+        // And sending reject messages is done by SendMessage using
+        // CNodeState.rejects.
     }
 
+    else if (strCommand == NetMsgType::INVALIDBLOCK)
+    {
+        CBlock block;
+        vRecv >> block;
+        uint256 hash = block.GetHash();
+
+        // block must have valid merkle root and proof of work, and
+        // be invalid for some other reason.
+        bool mutated;
+        uint256 hashMerkleRoot = BlockMerkleRoot(block, &mutated);
+        if (block.hashMerkleRoot != hashMerkleRoot ||
+            !CheckProofOfWork(hash, block.nBits, chainparams.GetConsensus())) {
+            Misbehaving(pfrom->GetId(), 100);
+        }
+        else {
+            LOCK(cs_main);
+            BlockMap::iterator it = mapBlockIndex.find(hash);
+            // invalidblock messages should only be sent in response to 'getdata' after
+            // we've got a 'headers' or 'inv' message.
+            if (it == mapBlockIndex.end() || !it->second->IsValid(BLOCK_VALID_TREE)) {
+                LogPrint("net", "unexpected invalidblock message %s received from peer %d\n",  hash.ToString(), pfrom->id);
+            } else {
+                LogPrint("net", "received invalidblock %s from peer=%d\n", hash.ToString(), pfrom->id);
+
+                CValidationState state;
+                bool fValid = TestBlockValidity(state, chainparams, block, it->second->pprev, true, true);
+                if (!fValid) { // we expect this
+                    CValidationState stateDummy; // prevent InvalidBlockFound from marking peer as Misbehaving()
+                    InvalidBlockFound(block, it->second, stateDummy);
+                }
+                else { // ... we should only hear about invalid blocks
+                    Misbehaving(pfrom->GetId(), 10);
+                    ProcessNewBlock(state, chainparams, pfrom, &block, false, NULL);
+                }
+            }
+        }
+    }
 
     // This asymmetric behavior for inbound and outbound connections was introduced
     // to prevent a fingerprinting attack: an attacker can send specific fake addresses
@@ -5087,7 +5166,7 @@ bool ProcessMessages(CNode* pfrom)
     //
     bool fOk = true;
 
-    if (!pfrom->vRecvGetData.empty())
+    if (!pfrom->vRecvGetData.empty() || !pfrom->waitingForBlock.empty())
         ProcessGetData(pfrom, chainparams.GetConsensus());
 
     // this maintains the order of responses
@@ -5344,6 +5423,7 @@ bool SendMessages(CNode* pto)
                     BlockMap::iterator mi = mapBlockIndex.find(hash);
                     assert(mi != mapBlockIndex.end());
                     CBlockIndex *pindex = mi->second;
+
                     if (chainActive[pindex->nHeight] != pindex) {
                         // Bail out if we reorged away from this block
                         fRevertToInv = true;
@@ -5588,12 +5668,6 @@ class CMainCleanup
 public:
     CMainCleanup() {}
     ~CMainCleanup() {
-        // block headers
-        BlockMap::iterator it1 = mapBlockIndex.begin();
-        for (; it1 != mapBlockIndex.end(); it1++)
-            delete (*it1).second;
-        mapBlockIndex.clear();
-
         // orphan transactions
         mapOrphanTransactions.clear();
         mapOrphanTransactionsByPrev.clear();

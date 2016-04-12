@@ -12,6 +12,7 @@
 #include "tinyformat.h"
 #include "uint256.h"
 
+#include <map>
 #include <vector>
 
 #include <boost/foreach.hpp>
@@ -145,8 +146,8 @@ public:
     unsigned int nBits;
     unsigned int nNonce;
 
-    //! (memory only) Sequential id assigned to distinguish order in which blocks are received.
-    uint32_t nSequenceId;
+    //! (memory only) The time this node first heard about blocks
+    static std::map<const CBlockIndex*, int64_t> firstSeenTime;
 
     void SetNull()
     {
@@ -161,7 +162,6 @@ public:
         nTx = 0;
         nChainTx = 0;
         nStatus = 0;
-        nSequenceId = 0;
 
         nVersion       = 0;
         hashMerkleRoot = uint256();
@@ -175,7 +175,7 @@ public:
         SetNull();
     }
 
-    CBlockIndex(const CBlockHeader& block)
+    CBlockIndex(const CBlockHeader& block, int64_t _firstSeenTime=0)
     {
         SetNull();
 
@@ -184,6 +184,13 @@ public:
         nTime          = block.nTime;
         nBits          = block.nBits;
         nNonce         = block.nNonce;
+        if (_firstSeenTime)
+            firstSeenTime[this] = _firstSeenTime;
+    }
+
+    ~CBlockIndex()
+    {
+        firstSeenTime.erase(this);
     }
 
     CDiskBlockPos GetBlockPos() const {
@@ -225,6 +232,12 @@ public:
     int64_t GetBlockTime() const
     {
         return (int64_t)nTime;
+    }
+    int64_t GetFirstSeenTime() const
+    {
+        if (firstSeenTime.count(this))
+            return firstSeenTime[this];
+        return 0;
     }
 
     enum { nMedianTimeSpan=11 };

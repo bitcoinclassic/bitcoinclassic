@@ -453,7 +453,12 @@ bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW = t
 bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& state, CBlockIndex *pindexPrev);
 bool ContextualCheckBlock(const CBlock& block, CValidationState& state, CBlockIndex *pindexPrev);
 
-/** Check a block is completely valid from start to finish (only works on top of our current best block, with cs_main held) */
+/**
+ * Check if a block is valid. Checking proof-of-work and merkle root may be skipped,
+ * as will testing against the current unspent transactions if pindexPrev is not
+ * our current best block.
+ * Returns false if block is not valid, with details on why validation failed returned in state.
+ * Requires cs_main to be held. */
 bool TestBlockValidity(CValidationState& state, const CChainParams& chainparams, const CBlock& block, CBlockIndex* pindexPrev, bool fCheckPOW = true, bool fCheckMerkleRoot = true);
 
 

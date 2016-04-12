@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(BigBlockFork_Time1)
 
     LOCK(cs_main);
 
-    BOOST_CHECK(pblocktemplate = CreateNewBlock(chainparams, scriptPubKey));
+    BOOST_CHECK(pblocktemplate = CreateNewBlock(chainparams, scriptPubKey, chainActive.Tip(), mempool));
     CBlock *pblock = &pblocktemplate->block;
 
     // Before fork time...
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(BigBlockFork_Time2)
 
     LOCK(cs_main);
 
-    BOOST_CHECK(pblocktemplate = CreateNewBlock(chainparams, scriptPubKey));
+    BOOST_CHECK(pblocktemplate = CreateNewBlock(chainparams, scriptPubKey, chainActive.Tip(), mempool));
     CBlock *pblock = &pblocktemplate->block;
 
     // Exactly at fork time...
@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE(BigBlockFork_NoActivation)
 
     LOCK(cs_main);
 
-    BOOST_CHECK(pblocktemplate = CreateNewBlock(chainparams, scriptPubKey));
+    BOOST_CHECK(pblocktemplate = CreateNewBlock(chainparams, scriptPubKey, chainActive.Tip(), mempool));
     CBlock *pblock = &pblocktemplate->block;
 
     // Exactly at fork time...

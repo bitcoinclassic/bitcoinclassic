@@ -94,6 +94,9 @@ public:
     /** Show progress e.g. for verifychain */
     boost::signals2::signal<void (const std::string &title, int nProgress)> ShowProgress;
 
+    /** New block header has been accepted */
+    boost::signals2::signal<void (const CBlockIndex *)> NotifyBlockHeader;
+
     /** New block has been accepted */
     boost::signals2::signal<void (bool, const CBlockIndex *)> NotifyBlockTip;
 

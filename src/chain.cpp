@@ -50,6 +50,10 @@ CBlockLocator CChain::GetLocator(const CBlockIndex *pindex) const {
     return CBlockLocator(vHave);
 }
 
+// Putting first seen time in a map instead of making it a member
+// of CBlockIndex is a memory optimization
+std::map<const CBlockIndex*, int64_t> CBlockIndex::firstSeenTime;
+
 const CBlockIndex *CChain::FindFork(const CBlockIndex *pindex) const {
     if (pindex == NULL) {
         return NULL;

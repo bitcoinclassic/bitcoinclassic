@@ -823,6 +823,25 @@ class msg_block(object):
         return "msg_block(block=%s)" % (repr(self.block))
 
 
+class msg_invalidblock(object):
+    command = "invalidblock"
+
+    def __init__(self, block=None):
+        if block is None:
+            self.block = CBlock()
+        else:
+            self.block = block
+
+    def deserialize(self, f):
+        self.block.deserialize(f)
+
+    def serialize(self):
+        return self.block.serialize()
+
+    def __repr__(self):
+        return "msg_invalidblock(block=%s)" % (repr(self.block))
+
+
 class msg_getaddr(object):
     command = "getaddr"
 

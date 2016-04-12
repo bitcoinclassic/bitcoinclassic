@@ -250,6 +250,12 @@ void Shutdown()
     delete pwalletMain;
     pwalletMain = NULL;
 #endif
+    // block headers
+    BlockMap::iterator it1 = mapBlockIndex.begin();
+    for (; it1 != mapBlockIndex.end(); it1++)
+        delete (*it1).second;
+    mapBlockIndex.clear();
+
     globalVerifyHandle.reset();
     ECC_Stop();
     LogPrintf("%s: done\n", __func__);
@@ -319,6 +325,7 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += HelpMessageOpt("-alerts", strprintf(_("Receive and display P2P network alerts (default: %u)"), DEFAULT_ALERTS));
     strUsage += HelpMessageOpt("-alertnotify=<cmd>", _("Execute command when a relevant alert is received or we see a really long fork (%s in cmd is replaced by message)"));
     strUsage += HelpMessageOpt("-blocknotify=<cmd>", _("Execute command when the best block changes (%s in cmd is replaced by block hash)"));
+    strUsage += HelpMessageOpt("-blockheadernotify=<cmd>", _("Execute command when the best block header changes (%s in cmd is replaced by block hash)"));
     if (showDebug)
         strUsage += HelpMessageOpt("-blocksonly", strprintf(_("Whether to operate in a blocks only mode (default: %u)"), DEFAULT_BLOCKSONLY));
     strUsage += HelpMessageOpt("-checkblocks=<n>", strprintf(_("How many blocks to check at startup (default: %u, 0 = all)"), DEFAULT_CHECKBLOCKS));
@@ -529,6 +536,17 @@ std::string LicenseInfo()
            "\n" +
            FormatParagraph(_("This product includes software developed by the OpenSSL Project for use in the OpenSSL Toolkit <https://www.openssl.org/> and cryptographic software written by Eric Young and UPnP software written by Thomas Bernard.")) +
            "\n";
+}
+
+static void BlockHeaderNotifyCallback(const CBlockIndex *pBlockIndex)
+{
+    if (!pBlockIndex)
+        return;
+
+    std::string strCmd = GetArg("-blockheadernotify", "");
+
+    boost::replace_all(strCmd, "%s", pBlockIndex->GetBlockHash().GetHex());
+    boost::thread t(runCommand, strCmd); // thread runs free
 }
 
 static void BlockNotifyCallback(bool initialSync, const CBlockIndex *pBlockIndex)
@@ -1598,6 +1616,8 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     if (mapArgs.count("-blocknotify"))
         uiInterface.NotifyBlockTip.connect(BlockNotifyCallback);
+    if (mapArgs.count("-blockheadernotify"))
+        uiInterface.NotifyBlockHeader.connect(BlockHeaderNotifyCallback);
 
     uiInterface.InitMessage(_("Activating best chain..."));
     // scan for better chains in the block chain database, that are not yet connected in the active best chain

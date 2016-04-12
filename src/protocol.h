@@ -218,6 +218,11 @@ extern const char *REJECT;
  * @see https://bitcoin.org/en/developer-reference#sendheaders
  */
 extern const char *SENDHEADERS;
+/**
+ * The invalidblock message transmits a single serialized block that
+ * has valid proof-of-work but was found to be invalid for some reason.
+ */
+extern const char *INVALIDBLOCK;
 
 };
 

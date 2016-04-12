@@ -325,6 +325,7 @@ public:
     CCriticalSection cs_vSend;
 
     std::deque<CInv> vRecvGetData;
+    std::map<uint256, int> waitingForBlock; // peer is waiting for data for these blocks
     std::deque<CNetMessage> vRecvMsg;
     CCriticalSection cs_vRecvMsg;
     uint64_t nRecvBytes;

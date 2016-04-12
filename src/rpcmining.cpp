@@ -157,7 +157,7 @@ UniValue generate(const UniValue& params, bool fHelp)
     UniValue blockHashes(UniValue::VARR);
     while (nHeight < nHeightEnd)
     {
-        auto_ptr<CBlockTemplate> pblocktemplate(CreateNewBlock(Params(), coinbaseScript->reserveScript));
+        auto_ptr<CBlockTemplate> pblocktemplate(CreateNewBlock(Params(), coinbaseScript->reserveScript, chainActive.Tip(), mempool));
         if (!pblocktemplate.get())
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Couldn't create new block");
         CBlock *pblock = &pblocktemplate->block;
@@ -320,6 +320,24 @@ static UniValue BIP22ValidationResult(const CValidationState& state)
     return "valid?";
 }
 
+// Head-first mining: If we've received a more-work header
+// with valid proof-of-work, build an empty block on it for up to 30 seconds
+// header_tip is the most-work chain of headers we've seen.
+// validated_tip is the most-work fully-validated chain; most of the time
+// they are the same, they are different only in the time between receiving a
+// block header and receiving and then fully validating the block with
+// all its transactions.
+static CBlockIndex* GetBuildTip(int64_t nHeadFirst, CBlockIndex* validated_tip, CBlockIndex* header_tip)
+{
+    if ((GetTime() - header_tip->GetFirstSeenTime() <= nHeadFirst) &&
+	header_tip && (header_tip->nChainWork > validated_tip->nChainWork) &&
+        header_tip->IsValid(BLOCK_VALID_HEADER)) {
+        return header_tip;
+    }
+
+    return validated_tip;
+}
+
 UniValue getblocktemplate(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 1)
@@ -337,6 +355,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
             "           \"support\"           (string) client side supported feature, 'longpoll', 'coinbasetxn', 'coinbasevalue', 'proposal', 'serverlist', 'workid'\n"
             "           ,...\n"
             "         ]\n"
+            "       \"headfirst\": n         (numeric, optional) Build empty blocks on validated headers for at most n seconds\n"
             "     }\n"
             "\n"
 
@@ -376,6 +395,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
             "  \"curtime\" : ttt,                  (numeric) current timestamp in seconds since epoch (Jan 1 1970 GMT)\n"
             "  \"bits\" : \"xxx\",                 (string) compressed target of next block\n"
             "  \"height\" : n                      (numeric) The height of the next block\n"
+            "  \"previousfullyvalidated\" : true|false (boolean) Previous blocks were completely validated\n"
             "}\n"
 
             "\nExamples:\n"
@@ -385,6 +405,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
 
     LOCK(cs_main);
 
+    int64_t nHeadFirst = 0;
     std::string strMode = "template";
     UniValue lpval = NullUniValue;
     if (params.size() > 0)
@@ -423,13 +444,21 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
             }
 
             CBlockIndex* const pindexPrev = chainActive.Tip();
-            // TestBlockValidity only supports blocks built on the current Tip
-            if (block.hashPrevBlock != pindexPrev->GetBlockHash())
-                return "inconclusive-not-best-prevblk";
             CValidationState state;
             TestBlockValidity(state, Params(), block, pindexPrev, false, true);
+            // TestBlockValidity doesn't fully validate blocks not built on the current Tip
+            if (state.IsValid() && block.hashPrevBlock != pindexPrev->GetBlockHash())
+                return "inconclusive-not-best-prevblk";
             return BIP22ValidationResult(state);
         }
+	else if (strMode == "template")
+	{
+	    const UniValue& headfirstval = find_value(oparam, "headfirst");
+            if (!headfirstval.isNum() && !headfirstval.isNull())
+                throw JSONRPCError(RPC_TYPE_ERROR, "Invalid headfirst value");
+	    if (headfirstval.isNum())
+                nHeadFirst = headfirstval.get_int64();
+	}
     }
 
     if (strMode != "template")
@@ -442,6 +471,13 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
         throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "Bitcoin is downloading blocks...");
 
     static unsigned int nTransactionsUpdatedLast;
+    static CTxMemPool emptyMemPool(CFeeRate(0));
+
+    // Which tip to build on
+    CBlockIndex* build_tip = GetBuildTip(nHeadFirst, chainActive.Tip(), pindexBestHeader);
+
+    // Memory pool to get transactions from
+    CTxMemPool* mPool = (build_tip == chainActive.Tip() ? &mempool : &emptyMemPool);
 
     if (!lpval.isNull())
     {
@@ -461,7 +497,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
         else
         {
             // NOTE: Spec does not specify behaviour for non-string longpollid, but this makes testing easier
-            hashWatchedChain = chainActive.Tip()->GetBlockHash();
+            hashWatchedChain = build_tip->GetBlockHash();
             nTransactionsUpdatedLastLP = nTransactionsUpdatedLast;
         }
 
@@ -471,12 +507,15 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
             checktxtime = boost::get_system_time() + boost::posix_time::minutes(1);
 
             boost::unique_lock<boost::mutex> lock(csBestBlock);
-            while (chainActive.Tip()->GetBlockHash() == hashWatchedChain && IsRPCRunning())
+            while (build_tip->GetBlockHash() == hashWatchedChain && IsRPCRunning())
             {
-                if (!cvBlockChange.timed_wait(lock, checktxtime))
+                bool timedOut = !cvBlockChange.timed_wait(lock, checktxtime);
+                build_tip = GetBuildTip(nHeadFirst, chainActive.Tip(), pindexBestHeader);
+                mPool = (build_tip == chainActive.Tip() ? &mempool : &emptyMemPool);
+                if (timedOut)
                 {
                     // Timeout: Check transactions for update
-                    if (mempool.GetTransactionsUpdated() != nTransactionsUpdatedLastLP)
+                    if (nTransactionsUpdatedLast == 0 || mPool->GetTransactionsUpdated() != nTransactionsUpdatedLastLP)
                         break;
                     checktxtime += boost::posix_time::seconds(10);
                 }
@@ -493,15 +532,16 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
     static CBlockIndex* pindexPrev;
     static int64_t nStart;
     static CBlockTemplate* pblocktemplate;
-    if (pindexPrev != chainActive.Tip() ||
-        (mempool.GetTransactionsUpdated() != nTransactionsUpdatedLast && GetTime() - nStart > 5))
+
+    if (pindexPrev != build_tip || nTransactionsUpdatedLast == 0 ||
+        (mPool->GetTransactionsUpdated() != nTransactionsUpdatedLast && GetTime() - nStart > 5))
     {
         // Clear pindexPrev so future calls make a new block, despite any failures from here on
         pindexPrev = NULL;
 
         // Store the pindexBest used before CreateNewBlock, to avoid races
-        nTransactionsUpdatedLast = mempool.GetTransactionsUpdated();
-        CBlockIndex* pindexPrevNew = chainActive.Tip();
+        nTransactionsUpdatedLast = mPool->GetTransactionsUpdated();
+        CBlockIndex* pindexPrevNew = build_tip;
         nStart = GetTime();
 
         // Create new block
@@ -511,7 +551,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
             pblocktemplate = NULL;
         }
         CScript scriptDummy = CScript() << OP_TRUE;
-        pblocktemplate = CreateNewBlock(Params(), scriptDummy);
+        pblocktemplate = CreateNewBlock(Params(), scriptDummy, build_tip, *mPool);
         if (!pblocktemplate)
             throw JSONRPCError(RPC_OUT_OF_MEMORY, "Out of memory");
 
@@ -577,7 +617,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
     result.push_back(Pair("transactions", transactions));
     result.push_back(Pair("coinbaseaux", aux));
     result.push_back(Pair("coinbasevalue", (int64_t)pblock->vtx[0].vout[0].nValue));
-    result.push_back(Pair("longpollid", chainActive.Tip()->GetBlockHash().GetHex() + i64tostr(nTransactionsUpdatedLast)));
+    result.push_back(Pair("longpollid", build_tip->GetBlockHash().GetHex() + i64tostr(nTransactionsUpdatedLast)));
     result.push_back(Pair("target", hashTarget.GetHex()));
     result.push_back(Pair("mintime", (int64_t)pindexPrev->GetMedianTimePast()+1));
     result.push_back(Pair("mutable", aMutable));
@@ -588,6 +628,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
     result.push_back(Pair("curtime", pblock->GetBlockTime()));
     result.push_back(Pair("bits", strprintf("%08x", pblock->nBits)));
     result.push_back(Pair("height", (int64_t)(pindexPrev->nHeight+1)));
+    result.push_back(Pair("previousfullyvalidated", build_tip->IsValid(BLOCK_VALID_SCRIPTS)));
 
     return result;
 }

@@ -107,6 +107,7 @@ testScripts = [
     'invalidblockrequest.py',
     'invalidtxrequest.py',
     'abandonconflict.py',
+    'headfirstmining.py',
 ]
 testScriptsExt = [
     'bip65-cltv.py',
