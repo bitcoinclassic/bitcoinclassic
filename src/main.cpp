@@ -4239,9 +4239,11 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
                             // they must either disconnect and retry or request the full block.
                             // Thus, the protocol spec specified allows for us to provide duplicate txn here,
                             // however we MUST always provide at least what the remote peer needs
+                            LOCK(pfrom->cs_inventory);
                             typedef std::pair<unsigned int, uint256> PairType;
                             BOOST_FOREACH(PairType& pair, merkleBlock.vMatchedTxn)
-                                pfrom->PushMessage(NetMsgType::TX, block.vtx[pair.first]);
+                                if (!pfrom->filterInventoryKnown.contains(pair.second))
+                                    pfrom->PushMessage(NetMsgType::TX, block.vtx[pair.first]);
                         }
                         // else
                             // no response
