@@ -110,6 +110,7 @@ testScripts = [
     'abandonconflict.py',
     'p2p-versionbits-warning.py',
     'bip68-sequence.py',
+    'transactionv4.py',
 ]
 testScriptsExt = [
     'bip9-softforks.py',
