@@ -72,7 +72,7 @@ public:
     CMainParams() {
         strNetworkID = "main";
         consensus.nSubsidyHalvingInterval = 210000;
-        consensus.nMajorityEnforceBlockUpgrade = 750;
+        consensus.nMajorityEnforceBlockUpgrade = 850;
         consensus.nMajorityRejectBlockOutdated = 950;
         consensus.nMajorityWindow = 1000;
         consensus.BIP34Height = 227931;
@@ -110,7 +110,7 @@ public:
         consensus.hashGenesisBlock = genesis.GetHash();
         // Timestamps for forking consensus rule changes:
         // Allow bigger blocks if:
-        consensus.nActivateSizeForkMajority = 750; // 75% of hashpower to activate fork
+        consensus.nActivateSizeForkMajority = 850; // 85% of hashpower to activate fork
         consensus.nSizeForkGracePeriod = 60*60*24*28; // four week grace period after activation
         consensus.nSizeForkExpiration = 1514764800; // 2018-01-01 00:00:00 GMT
         assert(consensus.hashGenesisBlock == uint256S("0x000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"));

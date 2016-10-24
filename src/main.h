@@ -562,7 +562,5 @@ static const unsigned int REJECT_HIGHFEE = 0x100;
 static const unsigned int REJECT_ALREADY_KNOWN = 0x101;
 /** Transaction conflicts with a transaction already known */
 static const unsigned int REJECT_CONFLICT = 0x102;
-/** Maximum size of a block */
-unsigned int MaxBlockSize(uint32_t nBlockTime);
 
 #endif // BITCOIN_MAIN_H

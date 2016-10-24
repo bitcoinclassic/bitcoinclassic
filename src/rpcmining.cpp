@@ -583,7 +583,11 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
     result.push_back(Pair("mutable", aMutable));
     result.push_back(Pair("noncerange", "00000000ffffffff"));
     result.push_back(Pair("sigoplimit", static_cast<int64_t>(MAX_BLOCK_SIGOPS)));
-    result.push_back(Pair("sizelimit", (int64_t)MaxBlockSize(pblock->nTime)));
+    int64_t sizeLimit = 32E6; // lets have a nice default, the goal is to remove this from the API
+    if (pblock->nTime < sizeForkTime.load()) { // before the protocol upgrade, limit size.
+        sizeLimit = MAX_BLOCK_SIZE;
+    }
+    result.push_back(Pair("sizelimit", sizeLimit));
     result.push_back(Pair("curtime", pblock->GetBlockTime()));
     result.push_back(Pair("bits", strprintf("%08x", pblock->nBits)));
     result.push_back(Pair("height", (int64_t)(pindexPrev->nHeight+1)));
