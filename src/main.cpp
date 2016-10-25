@@ -3127,7 +3127,12 @@ bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW, bo
     }
 
     // Size limits
-    unsigned int nSizeLimit = MaxBlockSize(block.nTime);
+    std::uint32_t nSizeLimit = GetArg("-excessiveblocksize",  DEFAULT_BLOCK_ACCEPT_SIZE / 10) * 10;
+    nSizeLimit = GetArg("-blocksizeacceptlimit", nSizeLimit);
+    nSizeLimit *= 100000; // blocksizeacceptlimit is in multiples of 100KB
+    if (block.nTime < sizeForkTime.load()) { // before the protocol upgrade, limit size.
+        nSizeLimit = std::min<std::uint32_t>(nSizeLimit, MAX_BLOCK_SIZE);
+    }
 
     if (block.vtx.empty() || block.vtx.size() > nSizeLimit || ::GetSerializeSize(block, SER_NETWORK, PROTOCOL_VERSION) > nSizeLimit)
         return state.DoS(100, error("CheckBlock(): size limits failed"),
