@@ -2038,7 +2038,7 @@ static int64_t nTimeIndex = 0;
 static int64_t nTimeCallbacks = 0;
 static int64_t nTimeTotal = 0;
 
-static bool DidBlockTriggerSizeFork(const CBlock &block, const CBlockIndex *pindex, const CChainParams &chainparams)
+static bool DidBlockTriggerSizeRemovalFork(const CBlock &block, const CBlockIndex *pindex, const CChainParams &chainparams)
 {
     if (pblocktree->IsSizeRemovalForkActivated())
         return false; // Already active
@@ -2050,12 +2050,9 @@ static bool DidBlockTriggerSizeFork(const CBlock &block, const CBlockIndex *pind
     int found = 0;
     const Consensus::Params &params = chainparams.GetConsensus();
     const CBlockIndex *current = pindex;
-    for (int i = 0; i < params.nMajorityWindow && current; ++i)
-    {
-        if ((current->nVersion & CBlockHeader::SIZE_FORK_BIT) == CBlockHeader::SIZE_FORK_BIT) {
-            if (++found > params.nActivateSizeForkMajority)
-                return true;
-        }
+    for (int i = 0; i < params.nMajorityWindow && current; ++i) {
+        if ((current->nVersion & CBlockHeader::SIZE_FORK_BIT) == CBlockHeader::SIZE_FORK_BIT && ++found >= params.nActivateSizeForkMajority)
+            return true;
         current = current->pprev;
     }
     return false;
@@ -2302,7 +2299,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     int64_t nTime6 = GetTimeMicros(); nTimeCallbacks += nTime6 - nTime5;
     LogPrint("bench", "    - Callbacks: %.2fms [%.2fs]\n", 0.001 * (nTime6 - nTime5), nTimeCallbacks * 0.000001);
 
-    if (DidBlockTriggerSizeFork(block, pindex, chainparams)) {
+    if (DidBlockTriggerSizeRemovalFork(block, pindex, chainparams)) {
         uint32_t time = block.nTime + chainparams.GetConsensus().nSizeForkGracePeriod;
         LogPrintf("%s: Max block size fork activating at time %d, bigger blocks allowed at time %d\n", __func__, block.nTime, time);
         pblocktree->SetSizeRemovalForkActived(pindex->GetBlockHash());
@@ -3128,14 +3125,23 @@ bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW, bo
     }
 
     // Size limits
-    std::uint32_t nSizeLimit = GetArg("-excessiveblocksize",  DEFAULT_BLOCK_ACCEPT_SIZE / 10) * 10;
-    nSizeLimit = GetArg("-blocksizeacceptlimit", nSizeLimit);
-    nSizeLimit *= 100000; // blocksizeacceptlimit is in multiples of 100KB
-    if (block.nTime < sizeForkTime.load()) { // before the protocol upgrade, limit size.
-        nSizeLimit = std::min<std::uint32_t>(nSizeLimit, MAX_BLOCK_SIZE);
+    std::int32_t nSizeLimit = GetArg("-excessiveblocksize",  -1) * 1E6;
+    auto userlimit = mapArgs.find("-blocksizeacceptlimit");
+    if (userlimit != mapArgs.end()) {
+        double limitInMB = atof(userlimit->second.c_str());
+        if (limitInMB <= 0) {
+            LogPrintf("Failed to understand blocksizeacceptlimit: '%s'\n", userlimit->second.c_str());
+        } else {
+            nSizeLimit = static_cast<int32_t>(limitInMB * 10) * 1E5;
+        }
     }
+    if (nSizeLimit <= 0)
+        nSizeLimit = DEFAULT_BLOCK_ACCEPT_SIZE * 1E5;
 
-    if (block.vtx.empty() || block.vtx.size() > nSizeLimit || ::GetSerializeSize(block, SER_NETWORK, PROTOCOL_VERSION) > nSizeLimit)
+    if (block.nTime < sizeForkTime.load()) // before the protocol upgrade, limit size.
+        nSizeLimit = std::min<std::uint32_t>(nSizeLimit, MAX_BLOCK_SIZE);
+
+    if (block.vtx.empty() || block.vtx.size() > (uint32_t) nSizeLimit || ::GetSerializeSize(block, SER_NETWORK, PROTOCOL_VERSION) > (uint32_t) nSizeLimit)
         return state.DoS(100, error("CheckBlock(): size limits failed"),
                          REJECT_INVALID, "bad-blk-length");
 
