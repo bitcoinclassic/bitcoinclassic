@@ -20,7 +20,7 @@ soft-forks, and test that warning alerts are generated.
 VB_PERIOD = 144 # versionbits period length for regtest
 VB_THRESHOLD = 108 # versionbits activation threshold for regtest
 VB_TOP_BITS = 0x20000000
-VB_UNKNOWN_BIT = 27 # Choose a bit unassigned to any deployment
+VB_UNKNOWN_BIT = 26 # Choose a bit unassigned to any deployment
 
 # TestNode: bare-bones "peer".  Used mostly as a conduit for a test to sending
 # p2p messages to a node, generating the messages in the main testing logic.

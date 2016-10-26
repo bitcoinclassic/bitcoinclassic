@@ -83,10 +83,11 @@ BOOST_AUTO_TEST_CASE(BigBlockFork_Time1)
     CBlockTemplate *pblocktemplate;
 
     uint64_t t = GetTime();
-    uint64_t preforkSize = OLD_MAX_BLOCK_SIZE;
-    uint64_t postforkSize = MAX_BLOCK_SIZE;
+    uint64_t preforkSize = MAX_BLOCK_SIZE;
+    uint64_t postforkSize = 2E6;
     uint64_t tActivate = t;
 
+    mapArgs.insert(std::make_pair<std::string,std::string>("-blocksizeacceptlimit", "2"));
     sizeForkTime.store(tActivate);
 
     LOCK(cs_main);
@@ -122,11 +123,12 @@ BOOST_AUTO_TEST_CASE(BigBlockFork_Time2)
     const CChainParams& chainparams = Params(CBaseChainParams::MAIN);
 
     uint64_t t = GetTime();
-    uint64_t preforkSize = OLD_MAX_BLOCK_SIZE;
-    uint64_t postforkSize = MAX_BLOCK_SIZE;
+    uint64_t preforkSize = MAX_BLOCK_SIZE;
+    uint64_t postforkSize = 2E6;
 
     uint64_t tActivate = t+60*60*24*30;
     sizeForkTime.store(tActivate);
+    mapArgs.insert(std::make_pair<std::string,std::string>("-blocksizeacceptlimit", "2"));
 
     LOCK(cs_main);
 
@@ -154,8 +156,9 @@ BOOST_AUTO_TEST_CASE(BigBlockFork_NoActivation)
     const CChainParams& chainparams = Params(CBaseChainParams::MAIN);
 
     uint64_t t = GetTime();
-    uint64_t preforkSize = OLD_MAX_BLOCK_SIZE;
-    uint64_t postforkSize = MAX_BLOCK_SIZE;
+    uint64_t preforkSize = MAX_BLOCK_SIZE;
+    uint64_t postforkSize = 2E6;
+    mapArgs.insert(std::make_pair<std::string,std::string>("-blocksizeacceptlimit", "2"));
 
     LOCK(cs_main);
 

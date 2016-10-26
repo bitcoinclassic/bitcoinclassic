@@ -8,6 +8,8 @@
 
 #include "base58.h"
 #include "netbase.h"
+#include "primitives/block.h"
+#include "versionbits.h"
 
 #include "test/test_bitcoin.h"
 
@@ -396,7 +398,7 @@ BOOST_AUTO_TEST_CASE(rpc_getblockchaininfo)
     // case 2: a block history with only version 4 blocks in the window, but 
     // one bip109 block before that (at genesis, outside window, zero bip109)
     testblocks = freshchain(chain_len);
-    (*testblocks)[0].nVersion = BASE_VERSION + FORK_BIT_2MB;
+    (*testblocks)[0].nVersion = CBlockHeader::SIZE_FORK_BIT + VERSIONBITS_TOP_BITS;
     chainActive.SetTip(&(*testblocks)[chain_len-1]);
     BOOST_CHECK_NO_THROW(r = CallRPC(string("getblockchaininfo")));
     o1 = r.get_obj();
@@ -415,7 +417,7 @@ BOOST_AUTO_TEST_CASE(rpc_getblockchaininfo)
     testblocks = freshchain(chain_len);
     // add BIP109 blocks, one short of the required majority
     for (int i = 1; i <= chain_len-1; i++) {
-        (*testblocks)[i].nVersion = BASE_VERSION + FORK_BIT_2MB;
+        (*testblocks)[i].nVersion = CBlockHeader::SIZE_FORK_BIT + VERSIONBITS_TOP_BITS;
     }
     // timestamp the last block as expired w.r.t. BIP109
     (*testblocks)[chain_len-1].nTime = params.nSizeForkExpiration + 1;
@@ -431,12 +433,12 @@ BOOST_AUTO_TEST_CASE(rpc_getblockchaininfo)
     // case 4: a block history with (majority-1) BIP9 (0x200000) blocks followed
     //         by the remainder BIP109 blocks, all in window
     testblocks = freshchain(chain_len);
-    // add BASE_VERSION (BIP9) blocks, one short of the required majority
+    // add VERSIONBITS_TOP_BITS (BIP9) blocks, one short of the required majority
     for (int i = 1; i <= params.nActivateSizeForkMajority-1; i++) {
-        (*testblocks)[i].nVersion = BASE_VERSION;
+        (*testblocks)[i].nVersion = VERSIONBITS_TOP_BITS;
     }
     for (int i = params.nActivateSizeForkMajority; i <= chain_len-1; i++) {
-        (*testblocks)[i].nVersion = BASE_VERSION + FORK_BIT_2MB;
+        (*testblocks)[i].nVersion = CBlockHeader::SIZE_FORK_BIT + VERSIONBITS_TOP_BITS;
     }
     chainActive.SetTip(&(*testblocks)[chain_len-1]);
     BOOST_CHECK_NO_THROW(r = CallRPC(string("getblockchaininfo")));
@@ -453,7 +455,7 @@ BOOST_AUTO_TEST_CASE(rpc_getblockchaininfo)
     ///////////////////////////////////////////////////////////////////////////
     // case 5: a v4-block history with one bip109 block at lower end (height 1)
     testblocks = freshchain(chain_len);
-    (*testblocks)[1].nVersion = BASE_VERSION + FORK_BIT_2MB;
+    (*testblocks)[1].nVersion = CBlockHeader::SIZE_FORK_BIT + VERSIONBITS_TOP_BITS;
     chainActive.SetTip(&(*testblocks)[chain_len-1]);
     BOOST_CHECK_NO_THROW(r = CallRPC(string("getblockchaininfo")));
     o1 = r.get_obj();
@@ -469,7 +471,7 @@ BOOST_AUTO_TEST_CASE(rpc_getblockchaininfo)
     ///////////////////////////////////////////////////////////////////////////
     // case 6: a v4-block history with one bip109 block at tip
     testblocks = freshchain(chain_len);
-    (*testblocks)[testblocks->size()-1].nVersion = BASE_VERSION + FORK_BIT_2MB;
+    (*testblocks)[testblocks->size()-1].nVersion = CBlockHeader::SIZE_FORK_BIT + VERSIONBITS_TOP_BITS;
     chainActive.SetTip(&(*testblocks)[chain_len-1]);
     BOOST_CHECK_NO_THROW(r = CallRPC(string("getblockchaininfo")));
     o1 = r.get_obj();
@@ -487,7 +489,7 @@ BOOST_AUTO_TEST_CASE(rpc_getblockchaininfo)
     // case 7: full majority of bip109 blocks starting at lower end of window
     testblocks = freshchain(chain_len);
     for (int i = 1; i <= params.nActivateSizeForkMajority; i++) {
-        (*testblocks)[i].nVersion = BASE_VERSION + FORK_BIT_2MB;
+        (*testblocks)[i].nVersion = CBlockHeader::SIZE_FORK_BIT + VERSIONBITS_TOP_BITS;
     }
     chainActive.SetTip(&(*testblocks)[chain_len-1]);
     BOOST_CHECK_NO_THROW(r = CallRPC(string("getblockchaininfo")));
@@ -506,7 +508,7 @@ BOOST_AUTO_TEST_CASE(rpc_getblockchaininfo)
     // case 8: full window of bip109 blocks (exceeding majority)
     testblocks = freshchain(chain_len);
     for (int i = 1; i <= params.nMajorityWindow; i++) {
-        (*testblocks)[i].nVersion = BASE_VERSION + FORK_BIT_2MB;
+        (*testblocks)[i].nVersion = CBlockHeader::SIZE_FORK_BIT + VERSIONBITS_TOP_BITS;
     }
     chainActive.SetTip(&(*testblocks)[chain_len-1]);
     BOOST_CHECK_NO_THROW(r = CallRPC(string("getblockchaininfo")));
@@ -525,7 +527,7 @@ BOOST_AUTO_TEST_CASE(rpc_getblockchaininfo)
     // case 9: full window of blocks with version > 0x30000000 - all of them should count
     testblocks = freshchain(chain_len);
     for (int i = 1; i <= params.nMajorityWindow; i++) {
-        (*testblocks)[i].nVersion = BASE_VERSION + FORK_BIT_2MB + i % 10;
+        (*testblocks)[i].nVersion = CBlockHeader::SIZE_FORK_BIT + VERSIONBITS_TOP_BITS + i % 10;
     }
     chainActive.SetTip(&(*testblocks)[chain_len-1]);
     BOOST_CHECK_NO_THROW(r = CallRPC(string("getblockchaininfo")));

@@ -619,7 +619,7 @@ static UniValue HardForkMajorityDesc(int minVersion, CBlockIndex* pindex, int nR
         // Always report blocks found as over the threshold once the fork is active
         nFound = nRequired + 1;
         gracePeriodEnds = static_cast<uint64_t>(forkTime);
-        uint256 activationHash = pblocktree->ForkBitActivated(FORK_BIT_2MB);
+        uint256 activationHash = pblocktree->GetSizeRemovalForkActivated();
         assert(activationHash != uint256());
         triggeredAtBlock = activationHash.GetHex();
     } else {
@@ -744,10 +744,10 @@ UniValue getblockchaininfo(const UniValue& params, bool fHelp)
     obj.push_back(Pair("softforks",             softforks));
     obj.push_back(Pair("bip9_softforks", bip9_softforks));
 
-    if (tip->nTime <= consensusParams.SizeForkExpiration())
+    if (tip->nTime <= consensusParams.nSizeForkExpiration)
     {
         UniValue hardforks(UniValue::VARR);
-        hardforks.push_back(HardForkDesc("bip109", BASE_VERSION + FORK_BIT_2MB, tip, consensusParams));
+        hardforks.push_back(HardForkDesc("maxblocksize", CBlockHeader::SIZE_FORK_BIT + VERSIONBITS_TOP_BITS, tip, consensusParams));
         obj.push_back(Pair("hardforks", hardforks));
     }
 
