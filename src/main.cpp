@@ -3136,7 +3136,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW, bo
         }
     }
     if (nSizeLimit <= 0)
-        nSizeLimit = DEFAULT_BLOCK_ACCEPT_SIZE * 1E5;
+        nSizeLimit = static_cast<int32_t>(DEFAULT_BLOCK_ACCEPT_SIZE * 10) * 1E5;
 
     if (block.nTime < sizeForkTime.load()) // before the protocol upgrade, limit size.
         nSizeLimit = std::min<std::uint32_t>(nSizeLimit, MAX_BLOCK_SIZE);
