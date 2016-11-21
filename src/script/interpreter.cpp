@@ -1161,6 +1161,23 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
 
     extern boost::atomic<bool> flexTransActive;
     if (flexTransActive && txTo.nVersion == 4) {
+        // Signature hash returns a hash of a certain subset of the transaction's content
+        // allowing the private-key owner to sign that and proof he owns the public key and
+        // at the same time lock in all the content he signs.
+
+        // In the v4 (flextrans) format we add the support for the following proofs;
+        // * input amount.
+        //   Including the amount means we sign this transaction only if the amount we are spending
+        //   is the one provided. Wallets that do not have the full utxo DB can safely sign knowing
+        //   that if they were lied to about the amount being spent, their signature is useless.
+        // * Double spent-proof.
+        //   Should a node detect a double spent he can notify his peers about this fact. Instead of sending
+        //   the entire transaction, instead he sends only a proof.
+        //   The node needs to send two pairs of info that proves that in both transactions the CTxIn are
+        //   identical. Which means all data to re-generate the hash this method returns, plus both
+        //   tx's pubkey & signature for that vin.
+        //   If the data combines and the signature is correct for both, we have proof they are a double-spend pair.
+
         CHashWriter ss(SER_GETHASH, 0);
         if (nHashType <= SIGHASH_ALL) {
             ss << txTo.GetHash();
@@ -1169,9 +1186,7 @@ uint256 SignatureHash(const CScript& scriptCode, const CTransaction& txTo, unsig
         }
 
         ss << txTo.vin[nIn].prevout;
-        ss << static_cast<const CScriptBase&>(scriptCode);
         ss << amount;
-        ss << txTo.vin[nIn].nSequence;
         ss << nHashType;
         return ss.GetHash();
     }
