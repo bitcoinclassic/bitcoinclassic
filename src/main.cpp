@@ -878,33 +878,6 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState &state, const C
             const CTransaction *ptxConflicting = pool.mapNextTx[txin.prevout].ptx;
             if (!setConflicts.count(ptxConflicting->GetHash()))
             {
-                // Allow opt-out of transaction replacement by setting
-                // nSequence >= maxint-1 on all inputs.
-                //
-                // maxint-1 is picked to still allow use of nLockTime by
-                // non-replacable transactions. All inputs rather than just one
-                // is for the sake of multi-party protocols, where we don't
-                // want a single party to be able to disable replacement.
-                //
-                // The opt-out ignores descendants as anyone relying on
-                // first-seen mempool behavior should be checking all
-                // unconfirmed ancestors anyway; doing otherwise is hopelessly
-                // insecure.
-                bool fReplacementOptOut = true;
-                if (fEnableReplacement)
-                {
-                    BOOST_FOREACH(const CTxIn &txin, ptxConflicting->vin)
-                    {
-                        if (txin.nSequence < std::numeric_limits<unsigned int>::max()-1)
-                        {
-                            fReplacementOptOut = false;
-                            break;
-                        }
-                    }
-                }
-                if (fReplacementOptOut)
-                    return state.Invalid(false, REJECT_CONFLICT, "txn-mempool-conflict");
-
                 setConflicts.insert(ptxConflicting->GetHash());
             }
         }
@@ -4359,6 +4332,25 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
                                strprintf("Version must be %d or greater", MIN_PEER_PROTO_VERSION));
             pfrom->fDisconnect = true;
             return false;
+        }
+
+        // Disconnect if we have already met our quota of non-doublespend-relaying nodes.
+        if (!(pfrom->nServices & NODE_RELAYS_DOUBLESPENDS))
+        {
+            int nNonDoubleSpendRelaying = 0;
+
+            LOCK(cs_vNodes);
+            BOOST_FOREACH(CNode* pnode, vNodes) {
+                if (!(pnode->nServices & NODE_RELAYS_DOUBLESPENDS))
+                    nNonDoubleSpendRelaying++;
+            }
+
+            if (nNonDoubleSpendRelaying > nMaxConnections / 4) {
+                LogPrint("net", "reached quota of non-doublespend-relaying nodes; disconnecting %s\n",
+                         pfrom->addr.ToString());
+                pfrom->fDisconnect = true;
+                return false;
+            }
         }
 
         if (pfrom->nVersion == 10300)
