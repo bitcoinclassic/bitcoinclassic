@@ -79,7 +79,6 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const CScript& s
     if(!pblocktemplate.get())
         return NULL;
     CBlock *pblock = &pblocktemplate->block; // pointer for convenience
-    ValidationCostTracker resourceTracker(std::numeric_limits<size_t>::max(), std::numeric_limits<size_t>::max());
 
     // Create coinbase tx
     CMutableTransaction txNew;
@@ -109,6 +108,7 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const CScript& s
     uint64_t nBlockSize = 1000;
     uint64_t nBlockTx = 0;
     unsigned int nBlockSigOps = 100;
+    unsigned int nBlockSighashBytes = 0;
     int lastFewTxs = 0;
     CAmount nFees = 0;
     bool fCreatedValidBlock = false;
@@ -172,6 +172,7 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const CScript& s
         CTxMemPool::indexed_transaction_set::nth_index<3>::type::iterator mi = mempool.mapTx.get<3>().begin();
         CTxMemPool::txiter iter;
         uint32_t nMaxLegacySigops = MaxLegacySigops(pblock->nTime);
+        const uint32_t nMaxSighashBytes = MaxBlockSighash(pblock->nTime);
 
         while (mi != mempool.mapTx.get<3>().end() || !clearedTxs.empty())
         {
@@ -245,6 +246,10 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const CScript& s
                 }
                 continue;
             }
+            unsigned int nTxSighashBytes = iter->GetSighashBytes();
+            if (nBlockSighashBytes + nTxSighashBytes > nMaxSighashBytes) {
+                break;
+            }
 
             CAmount nTxFees = iter->GetFee();
             // Added
@@ -254,6 +259,7 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const CScript& s
             nBlockSize += nTxSize;
             ++nBlockTx;
             nBlockSigOps += nTxSigOps;
+            nBlockSighashBytes += nTxSighashBytes;
             nFees += nTxFees;
 
             if (fPrintPriority)
@@ -288,7 +294,7 @@ CBlockTemplate* CreateNewBlock(const CChainParams& chainparams, const CScript& s
         }
         nLastBlockTx = nBlockTx;
         nLastBlockSize = nBlockSize;
-        LogPrintf("CreateNewBlock(): total size %u txs: %u fees: %ld sigops %d\n", nBlockSize, nBlockTx, nFees, nBlockSigOps);
+        LogPrintf("CreateNewBlock(): total size %u txs: %u fees: %ld sigops %d sighash-bytes: %d\n", nBlockSize, nBlockTx, nFees, nBlockSigOps, nBlockSighashBytes);
 
         // Compute final coinbase transaction.
         txNew.vout[0].nValue = nFees + GetBlockSubsidy(nHeight, chainparams.GetConsensus());
