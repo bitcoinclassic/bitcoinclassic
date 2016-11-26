@@ -1,6 +1,6 @@
 package=boost
-$(package)_version=1_55_0
-$(package)_download_path=http://sourceforge.net/projects/boost/files/boost/1.55.0
+$(package)_version=1_59_0
+$(package)_download_path=http://sourceforge.net/projects/boost/files/boost/1.59.0
 $(package)_file_name=$(package)_$($(package)_version).tar.bz2
 $(package)_sha256_hash=fff00023dd79486d444c8e29922f4072e1d451fc5a4d2b6075852ead7f2b7b52
 $(package)_patches=darwin_boost_atomic-1.patch darwin_boost_atomic-2.patch gcc_5_no_cxx11.patch
