@@ -56,7 +56,7 @@ public:
 
         // Timestamps for forking consensus rule changes:
         // Allow bigger blocks if:
-        consensus.nActivateSizeForkMajority = 750; // 75% of hashpower to activate fork
+        consensus.nActivateSizeForkMajority = 950; // 95% of blocks out of the last 1000 blocks
         consensus.nSizeForkGracePeriod = 60*60*24*28; // four week grace period after activation
         consensus.nSizeForkExpiration = 1514764800; // 2018-01-01 00:00:00 GMT
 
