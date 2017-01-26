@@ -176,12 +176,12 @@ class MaxUploadTest(BitcoinTestFramework):
         getdata_request.inv.append(CInv(2, big_old_block))
 
         max_bytes_per_day = 400*1024*1024
-        daily_buffer = 144 * 2000000
+        daily_buffer = 144 * 1000000
         max_bytes_available = max_bytes_per_day - daily_buffer
         success_count = max_bytes_available // old_block_size
 
-        # Space reserved for relaying 144 new blocks, so expect this to
-        # succeed for ~140 tries.
+        # 144MB will be reserved for relaying new blocks, so expect this to
+        # succeed for ~290 tries.
         for i in xrange(success_count):
             test_nodes[0].send_message(getdata_request)
             test_nodes[0].sync_with_ping()
