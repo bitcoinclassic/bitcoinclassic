@@ -625,7 +625,7 @@ Mining::Mining()
     : m_minerThreads(0)
 {
     // read args to create m_coinbaseComment
-    std::int32_t sizeLimit = Policy::blockSizeAcceptLimit();
+    std::uint32_t sizeLimit = Policy::blockSizeAcceptLimit();
 
     std::stringstream ss;
     ss << std::fixed;
