@@ -387,7 +387,7 @@ static void addNodeRelayOptions(AllowedArgs& allowedArgs)
     allowedArgs
         .addHeader(_("Node relay options:"))
         .addDebugArg("acceptnonstdtxn", optionalBool, strprintf("Relay and mine \"non-standard\" transactions (%sdefault: %u)", "testnet/regtest only; ", true))
-        .addArg("blocksizeacceptlimit=<n>", requiredAmount, strprintf("This node will not accept blocks larger than this limit. Unit is in MB (default: %.1f)", DEFAULT_BLOCK_ACCEPT_SIZE))
+        .addArg("blocksizeacceptlimit=<n>", requiredAmount, strprintf("This node will not accept blocks larger than this limit. Unit is in MB (default: %.1f)", DEFAULT_BLOCK_ACCEPT_SIZE / 1e6))
         .addArg("bytespersigop=<n>", requiredInt, strprintf(_("Minimum bytes per sigop in transactions we relay and mine (default: %u)"), DEFAULT_BYTES_PER_SIGOP))
         .addArg("datacarrier", optionalBool, strprintf(_("Relay and mine data carrier transactions (default: %u)"), DEFAULT_ACCEPT_DATACARRIER))
         .addArg("datacarriersize=<n>", requiredInt, strprintf(_("Maximum size of data in data carrier transactions we relay and mine (default: %u)"), MAX_OP_RETURN_RELAY))

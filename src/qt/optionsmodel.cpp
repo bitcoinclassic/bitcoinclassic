@@ -93,7 +93,7 @@ void OptionsModel::Init(bool resetSettings)
         addOverriddenOption("-par");
 
     if (!settings.contains("blockSizeAcceptLimitBytes"))
-        settings.setValue("blockSizeAcceptLimitBytes", static_cast<int32_t>(round(DEFAULT_BLOCK_ACCEPT_SIZE * 1e6)));
+        settings.setValue("blockSizeAcceptLimitBytes", DEFAULT_BLOCK_ACCEPT_SIZE);
     if (mapArgs.count("-blocksizeacceptlimit"))
         addOverriddenOption("-blocksizeacceptlimit");
     else if (mapArgs.count("-excessiveblocksize"))
@@ -234,7 +234,7 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
         case Listen:
             return settings.value("fListen");
         case BlockSizeAcceptLimit:
-            return settings.value("blockSizeAcceptLimitBytes").toInt() / 1e6;
+            return settings.value("blockSizeAcceptLimitBytes").toUInt() / 1e6;
         default:
             return QVariant();
         }
@@ -379,7 +379,7 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             }
             break;
         case BlockSizeAcceptLimit: {
-                int32_t valueBytes = round(value.toDouble() * 1e6);
+                uint32_t valueBytes = round(value.toDouble() * 1e6);
                 if (settings.value("blockSizeAcceptLimitBytes") != valueBytes) {
                     settings.setValue("blockSizeAcceptLimitBytes", valueBytes);
                     setRestartRequired(true);

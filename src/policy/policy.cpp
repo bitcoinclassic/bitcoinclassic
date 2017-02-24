@@ -185,9 +185,9 @@ bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs)
     return true;
 }
 
-int32_t Policy::blockSizeAcceptLimit()
+uint32_t Policy::blockSizeAcceptLimit()
 {
-    int limit = -1;
+    uint32_t limit = -1;
     auto userlimit = mapArgs.find("-blocksizeacceptlimit");
     if (userlimit == mapArgs.end()) { // fallback to the BitcoinUnlimited name.
        limit = GetArg("-excessiveblocksize", -1);
@@ -198,12 +198,12 @@ int32_t Policy::blockSizeAcceptLimit()
         if (limitInMB <= 0) {
             LogPrintf("Failed to understand blocksizeacceptlimit: '%s'\n", userlimit->second.c_str());
         } else {
-            limit = static_cast<int32_t>(round(limitInMB * 1000000));
+            limit = static_cast<uint32_t>(round(limitInMB * 1000000));
             limit -= (limit % 100000); // only one digit behind the dot was allowed
         }
     }
     if (limit <= 0)
-        limit = static_cast<int32_t>(DEFAULT_BLOCK_ACCEPT_SIZE * 10) * 1E5;
+        limit = DEFAULT_BLOCK_ACCEPT_SIZE;
     if (limit < 1000000)
         LogPrintf("BlockSize set to extremely low value (%d bytes), this may cause failures.\n", limit);
     return limit;

@@ -28,7 +28,7 @@ static const unsigned int MAX_STANDARD_TX_SIGOPS = MAX_BLOCK_SIGOPS/5;
 /** Default for -maxmempool, maximum megabytes of mempool memory usage */
 static const unsigned int DEFAULT_MAX_MEMPOOL_SIZE = 300;
 /** Default for -blocksizeacceptlimit */
-static const float DEFAULT_BLOCK_ACCEPT_SIZE = 3.7;
+static const uint32_t DEFAULT_BLOCK_ACCEPT_SIZE = 3.7e6;
 
 /**
  * Standard script verification flags that standard transactions will comply
@@ -67,7 +67,7 @@ bool IsStandardTx(const CTransaction& tx, std::string& reason);
 bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs);
 
 namespace Policy {
-    std::int32_t blockSizeAcceptLimit();
+    std::uint32_t blockSizeAcceptLimit();
 }
 
 #endif // BITCOIN_POLICY_POLICY_H
