@@ -171,27 +171,34 @@ BOOST_AUTO_TEST_CASE(boolargno)
 
 BOOST_AUTO_TEST_CASE(blockSizeAcceptLimit)
 {
+    Policy::resetBlockSizeAcceptLimitCache();
     ResetArgs("-excessiveblocksize=5004000");
     BOOST_CHECK_EQUAL(Policy::blockSizeAcceptLimit(), 5004000);
 
+    Policy::resetBlockSizeAcceptLimitCache();
     ResetArgs("-blocksizeacceptlimitbytes=5004000");
     BOOST_CHECK_EQUAL(Policy::blockSizeAcceptLimit(), 5004000);
 
     // blocksizeacceptlimit always wins
+    Policy::resetBlockSizeAcceptLimitCache();
     ResetArgs("-excessiveblocksize=5004000 -blocksizeacceptlimit=1.2");
     BOOST_CHECK_EQUAL(Policy::blockSizeAcceptLimit(), 1200000);
 
     // blocksizeacceptlimit always wins
+    Policy::resetBlockSizeAcceptLimitCache();
     ResetArgs("-blocksizeacceptlimitbytes=5004000 -blocksizeacceptlimit=1.2");
     BOOST_CHECK_EQUAL(Policy::blockSizeAcceptLimit(), 1200000);
 
     // blocksizeacceptlimitbytes always wins
+    Policy::resetBlockSizeAcceptLimitCache();
     ResetArgs("-excessiveblocksize=5004000 -blocksizeacceptlimitbytes=6004000");
     BOOST_CHECK_EQUAL(Policy::blockSizeAcceptLimit(), 6004000);
 
+    Policy::resetBlockSizeAcceptLimitCache();
     ResetArgs("-blocksizeacceptlimit=1.2");
     BOOST_CHECK_EQUAL(Policy::blockSizeAcceptLimit(), 1200000);
 
+    Policy::resetBlockSizeAcceptLimitCache();
     ResetArgs("-blocksizeacceptlimit=1.25");
     BOOST_CHECK_EQUAL(Policy::blockSizeAcceptLimit(), 1200000);
 }
