@@ -68,6 +68,7 @@ bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs)
 
 namespace Policy {
     std::int32_t blockSizeAcceptLimit();
+    void resetBlockSizeAcceptLimitCache();
 }
 
 #endif // BITCOIN_POLICY_POLICY_H

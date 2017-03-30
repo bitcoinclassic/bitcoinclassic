@@ -253,6 +253,43 @@ BOOST_AUTO_TEST_CASE(basic_transaction_tests)
     BOOST_CHECK_MESSAGE(!CheckTransaction(tx, state) || !state.IsValid(), "Transaction with duplicate txins should be invalid.");
 }
 
+BOOST_AUTO_TEST_CASE(large_valid_transaction)
+{
+    // Create a 1.001 MB transaction
+    string transaction = "010000000100010000000000000000000000000000000000000000000000000000000000000000000000ffffffff640000000000000000";
+    string outputPart = "fd14276a4d1027";
+    for (int i = 0; i < 20016; i++) {
+        outputPart += "0";
+    }
+    for (int i = 0; i < 100; i++) {
+        transaction += outputPart;
+    }
+    CDataStream stream(ParseHex(transaction), SER_NETWORK, PROTOCOL_VERSION);
+    CTransaction tx;
+    stream >> tx;
+    CValidationState state;
+    BOOST_CHECK_MESSAGE(CheckTransaction(tx, state) && state.IsValid(), "Transaction greater than 1 MB should be valid by defualt.");
+
+}
+
+BOOST_AUTO_TEST_CASE(large_invalid_transaction)
+{
+    // Create a 4 MB transaction
+    string transaction = "010000000100010000000000000000000000000000000000000000000000000000000000000000000000fffffffffd90010000000000000000";
+    string outputPart = "fd14276a4d1027";
+    for (int i = 0; i < 20016; i++) {
+        outputPart += "0";
+    }
+    for (int i = 0; i < 400; i++) {
+        transaction += outputPart;
+    }
+    CDataStream stream(ParseHex(transaction), SER_NETWORK, PROTOCOL_VERSION);
+    CTransaction tx;
+    stream >> tx;
+    CValidationState state;
+    BOOST_CHECK_MESSAGE(CheckTransaction(tx, state) || !state.IsValid(), "Transaction greater than 3.7 MB should not be valid by default.");
+}
+
 //
 // Helper: create two dummy transactions, each with
 // two outputs.  The first has 11 and 50 CENT outputs

@@ -185,9 +185,16 @@ bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs)
     return true;
 }
 
+namespace Policy {
+    static int32_t blockSizeAcceptLimitCached = -1;
+}
+
 int32_t Policy::blockSizeAcceptLimit()
 {
-    int limit = -1;
+    if (blockSizeAcceptLimitCached != -1)
+        return blockSizeAcceptLimitCached;
+
+    int32_t &limit = blockSizeAcceptLimitCached;
     auto userlimit = mapArgs.find("-blocksizeacceptlimit");
     if (userlimit == mapArgs.end()) {
         limit = GetArg("-blocksizeacceptlimitbytes", -1);
@@ -209,4 +216,9 @@ int32_t Policy::blockSizeAcceptLimit()
     if (limit < 1000000)
         LogPrintf("BlockSize set to extremely low value (%d bytes), this may cause failures.\n", limit);
     return limit;
+}
+
+void Policy::resetBlockSizeAcceptLimitCache()
+{
+    blockSizeAcceptLimitCached = -1;
 }
