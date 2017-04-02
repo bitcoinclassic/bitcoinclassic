@@ -15,7 +15,7 @@
 class CCoinsViewCache;
 
 /** Default for -blockmaxsize and -blockminsize, which control the range of sizes the mining code will create **/
-static const unsigned int DEFAULT_BLOCK_MAX_SIZE = 2000000;
+static const unsigned int DEFAULT_BLOCK_MAX_SIZE = 2E6;
 static const unsigned int DEFAULT_BLOCK_MIN_SIZE = 0;
 /** Default for -blockprioritysize, maximum space for zero/low-fee transactions **/
 static const unsigned int DEFAULT_BLOCK_PRIORITY_SIZE = 50000;
@@ -28,7 +28,7 @@ static const unsigned int MAX_STANDARD_TX_SIGOPS = MAX_BLOCK_SIGOPS_PER_MB/5;
 /** Default for -maxmempool, maximum megabytes of mempool memory usage */
 static const unsigned int DEFAULT_MAX_MEMPOOL_SIZE = 300;
 /** Default for -blocksizeacceptlimit */
-static const int32_t DEFAULT_BLOCK_ACCEPT_SIZE = 3700000;
+static const int32_t DEFAULT_BLOCK_ACCEPT_SIZE = 3.7e6;
 
 /**
  * Standard script verification flags that standard transactions will comply
