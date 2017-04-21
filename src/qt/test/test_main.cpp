@@ -8,6 +8,7 @@
 
 #include "util.h"
 #include "uritests.h"
+#include "compattests.h"
 
 #ifdef ENABLE_WALLET
 #include "paymentservertests.h"

@@ -361,6 +361,22 @@ case $host in
    *linux*)
      TARGET_OS=linux
      ;;
+   *dragonfly*)
+     TARGET_OS=dragonfly
+     LEVELDB_TARGET_FLAGS="-DOS_DRAGONFLYBSD"
+     ;;
+   *freebsd*)
+     TARGET_OS=freebsd
+     LEVELDB_TARGET_FLAGS="-DOS_FREEBSD"
+     ;;
+   *netbsd*)
+     TARGET_OS=netbsd
+     LEVELDB_TARGET_FLAGS="-DOS_NETBSD"
+     ;;
+   *openbsd*)
+     TARGET_OS=openbsd
+     LEVELDB_TARGET_FLAGS="-DOS_OPENBSD"
+     ;;
    *)
      ;;
 esac
