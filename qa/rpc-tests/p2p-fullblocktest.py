@@ -4,18 +4,33 @@
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #
 
-from test_framework.test_framework import ComparisonTestFramework
-from test_framework.util import *
-from test_framework.comptool import TestManager, TestInstance, RejectResult
-from test_framework.blocktools import *
+import random
 import time
+
+from test_framework.test_framework import ComparisonTestFramework
+from test_framework.util import assert_equal, start_nodes
+from test_framework.comptool import TestManager, TestInstance, RejectResult
+from test_framework.blocktools import (CBlockHeader,
+                                       COutPoint,
+                                       CTransaction,
+                                       CTxIn,
+                                       CTxOut,
+                                       NetworkThread,
+                                       create_block,
+                                       create_coinbase)
 from test_framework.key import CECKey
-from test_framework.script import CScript, SignatureHash, SIGHASH_ALL, OP_TRUE, OP_FALSE
+from test_framework.script import (CScript,
+                                   SignatureHash,
+                                   SIGHASH_ALL,
+                                   OP_TRUE,
+                                   OP_CHECKSIG)
+
 
 class PreviousSpendableOutput(object):
-    def __init__(self, tx = CTransaction(), n = -1):
+    def __init__(self, tx=CTransaction(), n=-1):
         self.tx = tx
         self.n = n  # the output we're spending
+
 
 '''
 This reimplements tests from the bitcoinj/FullBlockTestGenerator used
@@ -28,42 +43,45 @@ each test.
 MAX_BLOCK_SIZE = 2000000
 MAX_BLOCK_SIGOPS_PER_MB = 20000
 
+
 class FullBlockTest(ComparisonTestFramework):
 
-    ''' Can either run this test as 1 node with expected answers, or two and compare them. 
+    ''' Can either run this test as 1 node with expected answers, or two and compare them.
         Change the "outcome" variable from each TestInstance object to only do the comparison. '''
+
     def __init__(self):
         self.num_nodes = 1
         self.block_heights = {}
         self.coinbase_key = CECKey()
         self.coinbase_key.set_secretbytes(b"horsebattery")
         self.coinbase_pubkey = self.coinbase_key.get_pubkey()
-        self.block_time = int(time.time())+1
+        self.block_time = int(time.time()) + 1
         self.tip = None
         self.blocks = {}
 
     def setup_network(self):
         self.nodes = start_nodes(1, self.options.tmpdir,
-                extra_args = [['-whitelist=127.0.0.1', '-debug', '-blocksizeacceptlimit=2']])
+                                 extra_args=[['-whitelist=127.0.0.1', '-debug', '-blocksizeacceptlimit=2']])
 
     def run_test(self):
         test = TestManager(self, self.options.tmpdir)
         test.add_all_connections(self.nodes)
-        NetworkThread().start() # Start up network handling in another thread
+        # Start up network handling in another thread
+        NetworkThread().start()
         test.run()
 
     def add_transactions_to_block(self, block, tx_list):
-        [ tx.rehash() for tx in tx_list ]
+        [tx.rehash() for tx in tx_list]
         block.vtx.extend(tx_list)
         block.hashMerkleRoot = block.calc_merkle_root()
         block.rehash()
         return block
-    
+
     # Create a block on top of self.tip, and advance self.tip to point to the new block
     # if spend is specified, then 1 satoshi will be spent from that to an anyone-can-spend output,
     # and rest will go to fees.
     def next_block(self, number, spend=None, additional_coinbase_value=0, script=None, block_size=0):
-        if self.tip == None:
+        if self.tip is None:
             base_block_hash = self.genesis_hash
         else:
             base_block_hash = self.tip.sha256
@@ -71,19 +89,21 @@ class FullBlockTest(ComparisonTestFramework):
         height = self.block_heights[base_block_hash] + 1
         coinbase = create_coinbase(height, self.coinbase_pubkey)
         coinbase.vout[0].nValue += additional_coinbase_value
-        if (spend != None):
-            coinbase.vout[0].nValue += spend.tx.vout[spend.n].nValue - 1 # all but one satoshi to fees
+        if (spend is not None):
+            # all but one satoshi to fees
+            coinbase.vout[0].nValue += spend.tx.vout[spend.n].nValue - 1
         coinbase.rehash()
         block = create_block(base_block_hash, coinbase, self.block_time)
         spendable_output = None
-        if (spend != None):
+        if (spend is not None):
             tx = CTransaction()
-            tx.vin.append(CTxIn(COutPoint(spend.tx.sha256, spend.n), b"", 0xffffffff))  # no signature yet
+            # no signature yet
+            tx.vin.append(CTxIn(COutPoint(spend.tx.sha256, spend.n), b"", 0xffffffff))
             # This copies the java comparison tool testing behavior: the first
             # txout has a garbage scriptPubKey, "to make sure we're not
             # pre-verifying too much" (?)
-            tx.vout.append(CTxOut(0, CScript([random.randint(0,255), height & 255])))
-            if script == None:
+            tx.vout.append(CTxOut(0, CScript([random.randint(0, 255), height & 255])))
+            if script is None:
                 tx.vout.append(CTxOut(1, CScript([OP_TRUE])))
             else:
                 tx.vout.append(CTxOut(1, script))
@@ -92,7 +112,8 @@ class FullBlockTest(ComparisonTestFramework):
             # Now sign it if necessary
             scriptSig = b""
             scriptPubKey = bytearray(spend.tx.vout[spend.n].scriptPubKey)
-            if (scriptPubKey[0] == OP_TRUE):  # looks like an anyone-can-spend
+            if (scriptPubKey[0] == OP_TRUE):
+                # looks like an anyone-can-spend
                 scriptSig = CScript([OP_TRUE])
             else:
                 # We have to actually sign it
@@ -101,7 +122,7 @@ class FullBlockTest(ComparisonTestFramework):
             tx.vin[0].scriptSig = scriptSig
             # Now add the transaction to the block
             block = self.add_transactions_to_block(block, [tx])
-        if spendable_output != None and block_size > 0:
+        if spendable_output is not None and block_size > 0:
             while len(block.serialize()) < block_size:
                 tx = CTransaction()
                 script_length = block_size - len(block.serialize()) - 79
@@ -142,12 +163,12 @@ class FullBlockTest(ComparisonTestFramework):
             return TestInstance([[self.tip, True]])
 
         # returns a test case that asserts that the current tip was rejected
-        def rejected(reject = None):
+        def rejected(reject=None):
             if reject is None:
                 return TestInstance([[self.tip, False]])
             else:
                 return TestInstance([[self.tip, reject]])
-       
+
         # move the tip back to a previous block
         def tip(number):
             self.tip = self.blocks[number]
@@ -168,12 +189,10 @@ class FullBlockTest(ComparisonTestFramework):
         # creates a new block and advances the tip to that block
         block = self.next_block
 
-
         # Create a new block
         block(0)
         save_spendable_output()
         yield accepted()
-
 
         # Now we need that block to mature so we can spend the coinbase.
         test = TestInstance(sync_every_block=False)
@@ -182,7 +201,6 @@ class FullBlockTest(ComparisonTestFramework):
             test.blocks_and_transactions.append([self.tip, True])
             save_spendable_output()
         yield test
-
 
         # Start by building a couple of blocks on top (which output is spent is
         # in parentheses):
@@ -196,27 +214,24 @@ class FullBlockTest(ComparisonTestFramework):
         b2 = block(2, spend=out1)
         yield accepted()
 
-
         # so fork like this:
-        # 
+        #
         #     genesis -> b1 (0) -> b2 (1)
         #                      \-> b3 (1)
-        # 
+        #
         # Nothing should happen at this point. We saw b2 first so it takes priority.
         tip(1)
         b3 = block(3, spend=out1)
         txout_b3 = PreviousSpendableOutput(b3.vtx[1], 1)
         yield rejected()
 
-
         # Now we add another block to make the alternative chain longer.
-        # 
+        #
         #     genesis -> b1 (0) -> b2 (1)
         #                      \-> b3 (1) -> b4 (2)
         out2 = get_spendable_output()
         block(4, spend=out2)
         yield accepted()
-
 
         # ... and back to the first chain.
         #     genesis -> b1 (0) -> b2 (1) -> b5 (2) -> b6 (3)
@@ -230,7 +245,6 @@ class FullBlockTest(ComparisonTestFramework):
         block(6, spend=out3)
         yield accepted()
 
-
         # Try to create a fork that double-spends
         #     genesis -> b1 (0) -> b2 (1) -> b5 (2) -> b6 (3)
         #                                          \-> b7 (2) -> b8 (4)
@@ -243,7 +257,6 @@ class FullBlockTest(ComparisonTestFramework):
         block(8, spend=out4)
         yield rejected()
 
-
         # Try to create a block that has too much fee
         #     genesis -> b1 (0) -> b2 (1) -> b5 (2) -> b6 (3)
         #                                                    \-> b9 (4)
@@ -252,7 +265,6 @@ class FullBlockTest(ComparisonTestFramework):
         block(9, spend=out4, additional_coinbase_value=1)
         yield rejected(RejectResult(16, b'bad-cb-amount'))
 
-        
         # Create a fork that ends in a block with too much fee (the one that causes the reorg)
         #     genesis -> b1 (0) -> b2 (1) -> b5 (2) -> b6  (3)
         #                                          \-> b10 (3) -> b11 (4)
@@ -264,7 +276,6 @@ class FullBlockTest(ComparisonTestFramework):
         block(11, spend=out4, additional_coinbase_value=1)
         yield rejected(RejectResult(16, b'bad-cb-amount'))
 
-
         # Try again, but with a valid fork first
         #     genesis -> b1 (0) -> b2 (1) -> b5 (2) -> b6  (3)
         #                                          \-> b12 (3) -> b13 (4) -> b14 (5)
@@ -273,7 +284,6 @@ class FullBlockTest(ComparisonTestFramework):
         tip(5)
         b12 = block(12, spend=out3)
         save_spendable_output()
-        #yield TestInstance([[b12, False]])
         b13 = block(13, spend=out4)
         # Deliver the block header for b12, and the block b13.
         # b13 should be accepted but the tip won't advance until b12 is delivered.
@@ -286,26 +296,25 @@ class FullBlockTest(ComparisonTestFramework):
         block(14, spend=out5, additional_coinbase_value=1)
         yield rejected()
 
-        yield TestInstance([[b12, True, b13.sha256]]) # New tip should be b13.
+        # New tip should be b13.
+        yield TestInstance([[b12, True, b13.sha256]])
 
         # Add a block with MAX_BLOCK_SIGOPS_PER_MB and one with one more sigop
         #     genesis -> b1 (0) -> b2 (1) -> b5 (2) -> b6  (3)
         #                                          \-> b12 (3) -> b13 (4) -> b15 (5) -> b16 (6)
         #                      \-> b3 (1) -> b4 (2)
-        
+
         # Test that a block with a lot of checksigs is okay
         lots_of_checksigs = CScript([OP_CHECKSIG] * (MAX_BLOCK_SIGOPS_PER_MB - 1))
         tip(13)
         block(15, spend=out5, script=lots_of_checksigs)
         yield accepted()
 
-
         # Test that a block with too many checksigs is rejected
         out6 = get_spendable_output()
         too_many_checksigs = CScript([OP_CHECKSIG] * MAX_BLOCK_SIGOPS_PER_MB)
         block(16, spend=out6, script=too_many_checksigs)
         yield rejected(RejectResult(16, b'bad-blk-sigops'))
-
 
         # Attempt to spend a transaction created on a different fork
         #     genesis -> b1 (0) -> b2 (1) -> b5 (2) -> b6  (3)
@@ -359,7 +368,7 @@ class FullBlockTest(ComparisonTestFramework):
 
         # Make the next block one byte bigger and check that it fails
         tip(15)
-        block(24, spend=out6, block_size=MAX_BLOCK_SIZE+1)
+        block(24, spend=out6, block_size=MAX_BLOCK_SIZE + 1)
         yield rejected(RejectResult(19, b'bad-blk-length'))
 
         b25 = block(25, spend=out7)
@@ -419,6 +428,7 @@ class FullBlockTest(ComparisonTestFramework):
         too_many_checksigs = CScript([OP_CHECKSIG] * (MAX_BLOCK_SIGOPS_PER_MB * 2))
         block(33, spend=get_spendable_output(), script=too_many_checksigs, block_size=MAX_BLOCK_SIZE)
         yield rejected(RejectResult(16, b'bad-blk-sigops'))
+
 
 if __name__ == '__main__':
     FullBlockTest().main()
