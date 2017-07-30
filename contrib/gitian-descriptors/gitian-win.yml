@@ -29,7 +29,7 @@ files: []
 script: |
   WRAP_DIR=$HOME/wrapped
   HOSTS="x86_64-w64-mingw32"
-  CONFIGFLAGS="--enable-reduce-exports --disable-gui-tests --disable-debug-messages"
+  CONFIGFLAGS="--enable-reduce-exports --disable-gui-tests --disable-debug-messages --enable-uahf"
   FAKETIME_HOST_PROGS="g++ ar ranlib nm windres strip"
   FAKETIME_PROGS="date makensis zip"
 
