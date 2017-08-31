@@ -1266,7 +1266,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     Blocks::DB::instance()->setIsReindexing(fReindex);
     Blocks::DB::startBlockImporter();
     if (chainActive.Tip() == nullptr) {
-        logDebug("Waiting for genesis block to be imported...");
+        logDebug(Log::Bitcoin) << "Waiting for genesis block to be imported...";
         while (!fRequestShutdown && chainActive.Tip() == nullptr)
             MilliSleep(10);
     }
