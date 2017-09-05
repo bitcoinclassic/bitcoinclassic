@@ -53,8 +53,8 @@ public:
 
     bool isReindexing;
 
-    Streaming::ConstBuffer loadBlock(CDiskBlockPos pos, BlockType type);
-    Streaming::ConstBuffer writeBlock(int blockHeight, const Streaming::ConstBuffer &block, CDiskBlockPos &pos, BlockType type, uint32_t timestamp);
+    Streaming::ConstBuffer loadBlock(CDiskBlockPos pos, BlockType type, const uint256 *blockHash);
+    Streaming::ConstBuffer writeBlock(int blockHeight, const Streaming::ConstBuffer &block, CDiskBlockPos &pos, BlockType type, uint32_t timestamp, const uint256 *blockHash);
 
     std::shared_ptr<char> mapFile(int fileIndex, BlockType type, size_t *size_out = 0);
 

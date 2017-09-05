@@ -199,15 +199,16 @@ BOOST_AUTO_TEST_CASE(mapFile_writeUndo)
 
     FastUndoBlock block = FastUndoBlock::fromOldBlock(undoBlock);
 
+    uint256 random("0x3102389012829081203809128324729384712931203892379023802183017083");
     BOOST_CHECK_EQUAL(block.size(), 6);
     {
         uint32_t pos;
-        FastUndoBlock newBlock = db->writeUndoBlock(block, 0, &pos);
+        FastUndoBlock newBlock = db->writeUndoBlock(block, random, 0, &pos);
         BOOST_CHECK_EQUAL(newBlock.size(), 6);
         BOOST_CHECK_EQUAL(pos, 8);
     }
     {
-        FastUndoBlock newBlock = db->loadUndoBlock(CDiskBlockPos(0, 8));
+        FastUndoBlock newBlock = db->loadUndoBlock(CDiskBlockPos(0, 8), random);
         BOOST_CHECK_EQUAL(newBlock.size(), 6);
         CBlockUndo block2 = newBlock.createOldBlock();
         BOOST_CHECK_EQUAL(block2.vtxundo.size(), 1);
