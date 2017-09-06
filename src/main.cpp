@@ -2070,6 +2070,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         if (i > 0) {
             blockundo.vtxundo.push_back(CTxUndo());
         }
+
         UpdateCoins(tx, state, view, i == 0 ? undoDummy : blockundo.vtxundo.back(), pindex->nHeight);
 
         vPos.push_back(std::make_pair(tx.GetHash(), pos));
@@ -4161,26 +4162,58 @@ void static ProcessGetData(CNode* pfrom, const Consensus::Params& consensusParam
     }
 }
 
-bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vRecv, int64_t nTimeReceived)
-{
-    const CChainParams& chainparams = Params();
-    RandAddSeedPerfmon();
-    const bool fReindex = Blocks::DB::instance()->isReindexing();
-    logDebug(Log::Net) << "received:" << SanitizeString(strCommand) << "bytes:" << vRecv.size() << "peer:" << pfrom->id;
-    if (mapArgs.count("-dropmessagestest") && GetRand(atoi(mapArgs["-dropmessagestest"])) == 0)
-    {
-        LogPrintf("dropmessagestest DROPPING RECV MESSAGE\n");
-        return true;
-    }
+class NetworkMessage {
+public:
+    virtual ~NetworkMessage() {}
 
-    const bool xthinEnabled = IsThinBlocksEnabled();
+    NetworkMessage(CNode * const pFrom,
+                   const CChainParams &chain_params,
+                   const bool x_thin_enabled,
+                   const bool fReindex) :
+            pfrom(pFrom),
+            chainparams(chain_params),
+            xthinEnabled(x_thin_enabled),
+            fReindexing(fReindex) {}
 
-    if (strCommand == NetMsgType::VERSION)
+    NetworkMessage(CNode * const pFrom,
+                   const CChainParams &chain_params,
+                   const bool x_thin_enabled) :
+            NetworkMessage(pFrom, chain_params, x_thin_enabled, false) {}
+
+    NetworkMessage(CNode * const pFrom,
+                   const CChainParams &chain_params) :
+            NetworkMessage(pFrom, chain_params, false, false) {}
+
+    NetworkMessage(CNode * const pFrom,
+                   const bool x_thin_enabled) :
+            NetworkMessage(pFrom, Params(), x_thin_enabled, false) {}
+
+    NetworkMessage(CNode * const pFrom) :
+            NetworkMessage(pFrom, Params(), false, false) {}
+
+    virtual bool handle(CDataStream &vRecv,
+                        int64_t nTimeReceived,
+                        std::string &strCommand) = 0;
+
+protected:
+    CNode * const pfrom;
+    const CChainParams& chainparams;
+    const bool fReindexing;
+    const bool xthinEnabled;
+};
+
+class VersionMessage : public NetworkMessage {
+public:
+    ~VersionMessage() {}
+
+    VersionMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived, std::string &strCommand)
     {
         // Each connection can only send one version message
-        if (pfrom->nVersion != 0)
-        {
-            pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_DUPLICATE, std::string("Duplicate version message"));
+        if (pfrom->nVersion != 0) {
+            pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_DUPLICATE,
+                               std::string("Duplicate version message"));
             Misbehaving(pfrom->GetId(), 1);
             return false;
         }
@@ -4191,8 +4224,7 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         uint64_t nNonce = 1;
         vRecv >> pfrom->nVersion >> pfrom->nServices >> nTime >> addrMe;
 
-        if (pfrom->nVersion < MIN_PEER_PROTO_VERSION)
-        {
+        if (pfrom->nVersion < MIN_PEER_PROTO_VERSION) {
             // disconnect from peers older than this proto version
             LogPrintf("peer=%d using obsolete version %i; disconnecting\n", pfrom->id, pfrom->nVersion);
             pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE,
@@ -4218,16 +4250,14 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
             pfrom->fRelayTxes = true;
 
         // Disconnect if we connected to ourself
-        if (nNonce == nLocalHostNonce && nNonce > 1)
-        {
+        if (nNonce == nLocalHostNonce && nNonce > 1) {
             LogPrintf("connected to self at %s, disconnecting\n", pfrom->addr.ToString());
             pfrom->fDisconnect = true;
             return true;
         }
 
         pfrom->addrLocal = addrMe;
-        if (pfrom->fInbound && addrMe.IsRoutable())
-        {
+        if (pfrom->fInbound && addrMe.IsRoutable()) {
             SeenLocal(addrMe);
         }
 
@@ -4244,14 +4274,11 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         pfrom->PushMessage(NetMsgType::VERACK);
         pfrom->ssSend.SetVersion(std::min(pfrom->nVersion, PROTOCOL_VERSION));
 
-        if (!pfrom->fInbound)
-        {
+        if (!pfrom->fInbound) {
             // Advertise our address
-            if (fListen && !IsInitialBlockDownload())
-            {
+            if (fListen && !IsInitialBlockDownload()) {
                 CAddress addr = GetLocalAddress(&pfrom->addr);
-                if (addr.IsRoutable())
-                {
+                if (addr.IsRoutable()) {
                     LogPrintf("ProcessMessages: advertising address %s\n", addr.ToString());
                     pfrom->PushAddress(addr);
                 } else if (IsPeerAddrLocalGood(pfrom)) {
@@ -4262,15 +4289,13 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
             }
 
             // Get recent addresses
-            if (pfrom->fOneShot || pfrom->nVersion >= CADDR_TIME_VERSION || addrman.size() < 1000)
-            {
+            if (pfrom->fOneShot || pfrom->nVersion >= CADDR_TIME_VERSION || addrman.size() < 1000) {
                 pfrom->PushMessage(NetMsgType::GETADDR);
                 pfrom->fGetAddr = true;
             }
             addrman.Good(pfrom->addr);
         } else {
-            if (((CNetAddr)pfrom->addr) == (CNetAddr)addrFrom)
-            {
+            if (((CNetAddr) pfrom->addr) == (CNetAddr) addrFrom) {
                 addrman.Add(addrFrom, addrFrom);
                 addrman.Good(addrFrom);
             }
@@ -4278,25 +4303,25 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
 
         pfrom->fSuccessfullyConnected = true;
         logCritical(Log::Net) << "receive version message:" << pfrom->addr << pfrom->cleanSubVer << "version:"
-                          << pfrom->nVersion << "blocks:" << pfrom->nStartingHeight << "id:" << pfrom->id;
+                              << pfrom->nVersion << "blocks:" << pfrom->nStartingHeight << "id:" << pfrom->id;
         if (pfrom->isCashNode)
             logInfo(Log::Net) << "peer id:" << pfrom->GetId() << "uses CASH message-headers";
 
         int64_t nTimeOffset = nTime - GetTime();
         pfrom->nTimeOffset = nTimeOffset;
         AddTimeData(pfrom->addr, nTimeOffset);
+
+        return true;
     }
+};
 
+class VerAckMessage : public NetworkMessage {
+public:
+    ~VerAckMessage() {}
 
-    else if (pfrom->nVersion == 0)
-    {
-        // Must have a version message before anything else
-        Misbehaving(pfrom->GetId(), 1);
-        return false;
-    }
+    VerAckMessage(CNode * const pFrom, const bool x_thin_enabled) : NetworkMessage(pFrom, x_thin_enabled) {}
 
-
-    else if (strCommand == NetMsgType::VERACK)
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived, std::string &strCommand)
     {
         pfrom->SetRecvVersion(std::min(pfrom->nVersion, PROTOCOL_VERSION));
 
@@ -4320,10 +4345,18 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         // send our listening port in a separate version message
         if (pfrom->nVersion >= EXPEDITED_VERSION)
             pfrom->PushMessage(NetMsgType::VERSION2, GetListenPort());
+
+        return true;
     }
+};
 
+class AddrMessage : public NetworkMessage {
+public:
+    ~AddrMessage() {}
 
-    else if (strCommand == NetMsgType::ADDR && (Application::uahfChainState() == Application::UAHFDisabled) == ((pfrom->nServices & NODE_BITCOIN_CASH) == 0))
+    AddrMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived, std::string &strCommand)
     {
         std::vector<CAddress> vAddr;
         vRecv >> vAddr;
@@ -4331,8 +4364,7 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         // Don't want addr from older versions unless seeding
         if (pfrom->nVersion < CADDR_TIME_VERSION && addrman.size() > 1000)
             return true;
-        if (vAddr.size() > 1000)
-        {
+        if (vAddr.size() > 1000) {
             Misbehaving(pfrom->GetId(), 20);
             return error("message addr size() = %u", vAddr.size());
         }
@@ -4341,55 +4373,63 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         std::vector<CAddress> vAddrOk;
         int64_t nNow = GetAdjustedTime();
         int64_t nSince = nNow - 10 * 60;
-        BOOST_FOREACH(CAddress& addr, vAddr)
-        {
-            boost::this_thread::interruption_point();
+        BOOST_FOREACH(CAddress &addr, vAddr) {
+                        boost::this_thread::interruption_point();
 
-            if (addr.nTime <= 100000000 || addr.nTime > nNow + 10 * 60)
-                addr.nTime = nNow - 5 * 24 * 60 * 60;
-            pfrom->AddAddressKnown(addr);
-            bool fReachable = IsReachable(addr);
-            if (addr.nTime > nSince && !pfrom->fGetAddr && vAddr.size() <= 10 && addr.IsRoutable())
-            {
-                // Relay to a limited number of other nodes
-                {
-                    LOCK(cs_vNodes);
-                    // Use deterministic randomness to send to the same nodes for 24 hours
-                    // at a time so the addrKnowns of the chosen nodes prevent repeats
-                    static uint256 hashSalt;
-                    if (hashSalt.IsNull())
-                        hashSalt = GetRandHash();
-                    uint64_t hashAddr = addr.GetHash();
-                    uint256 hashRand = ArithToUint256(UintToArith256(hashSalt) ^ (hashAddr<<32) ^ ((GetTime()+hashAddr)/(24*60*60)));
-                    hashRand = Hash(BEGIN(hashRand), END(hashRand));
-                    std::multimap<uint256, CNode*> mapMix;
-                    BOOST_FOREACH(CNode* pnode, vNodes)
-                    {
-                        if (pnode->nVersion < CADDR_TIME_VERSION)
-                            continue;
-                        unsigned int nPointer;
-                        memcpy(&nPointer, &pnode, sizeof(nPointer));
-                        uint256 hashKey = ArithToUint256(UintToArith256(hashRand) ^ nPointer);
-                        hashKey = Hash(BEGIN(hashKey), END(hashKey));
-                        mapMix.insert(std::make_pair(hashKey, pnode));
+                        if (addr.nTime <= 100000000 || addr.nTime > nNow + 10 * 60)
+                            addr.nTime = nNow - 5 * 24 * 60 * 60;
+                        pfrom->AddAddressKnown(addr);
+                        bool fReachable = IsReachable(addr);
+                        if (addr.nTime > nSince && !pfrom->fGetAddr && vAddr.size() <= 10 && addr.IsRoutable()) {
+                            // Relay to a limited number of other nodes
+                            {
+                                LOCK(cs_vNodes);
+                                // Use deterministic randomness to send to the same nodes for 24 hours
+                                // at a time so the addrKnowns of the chosen nodes prevent repeats
+                                static uint256 hashSalt;
+                                if (hashSalt.IsNull())
+                                    hashSalt = GetRandHash();
+                                uint64_t hashAddr = addr.GetHash();
+                                uint256 hashRand = ArithToUint256(UintToArith256(hashSalt) ^ (hashAddr << 32) ^
+                                                                  ((GetTime() + hashAddr) / (24 * 60 * 60)));
+                                hashRand = Hash(BEGIN(hashRand), END(hashRand));
+                                std::multimap<uint256, CNode *> mapMix;
+                                BOOST_FOREACH(CNode *pnode, vNodes) {
+                                                if (pnode->nVersion < CADDR_TIME_VERSION)
+                                                    continue;
+                                                unsigned int nPointer;
+                                                memcpy(&nPointer, &pnode, sizeof(nPointer));
+                                                uint256 hashKey = ArithToUint256(UintToArith256(hashRand) ^ nPointer);
+                                                hashKey = Hash(BEGIN(hashKey), END(hashKey));
+                                                mapMix.insert(std::make_pair(hashKey, pnode));
+                                            }
+                                int nRelayNodes = fReachable ? 2
+                                                             : 1; // limited relaying of addresses outside our network(s)
+                                for (std::multimap<uint256, CNode *>::iterator mi = mapMix.begin();
+                                     mi != mapMix.end() && nRelayNodes-- > 0; ++mi)
+                                    ((*mi).second)->PushAddress(addr);
+                            }
+                        }
+                        // Do not store addresses outside our network
+                        if (fReachable)
+                            vAddrOk.push_back(addr);
                     }
-                    int nRelayNodes = fReachable ? 2 : 1; // limited relaying of addresses outside our network(s)
-                    for (std::multimap<uint256, CNode*>::iterator mi = mapMix.begin(); mi != mapMix.end() && nRelayNodes-- > 0; ++mi)
-                        ((*mi).second)->PushAddress(addr);
-                }
-            }
-            // Do not store addresses outside our network
-            if (fReachable)
-                vAddrOk.push_back(addr);
-        }
         addrman.Add(vAddrOk, pfrom->addr, 2 * 60 * 60);
         if (vAddr.size() < 1000)
             pfrom->fGetAddr = false;
         if (pfrom->fOneShot)
             pfrom->fDisconnect = true;
+        return true;
     }
+};
 
-    else if (strCommand == NetMsgType::SENDHEADERS)
+class SendHeadersMessage : public NetworkMessage {
+public:
+    ~SendHeadersMessage() {}
+
+    SendHeadersMessage(CNode * const pFrom, const bool x_thin_enabled) : NetworkMessage(pFrom, x_thin_enabled) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         LOCK(cs_main);
         // BUIP010 Xtreme Thinblocks: We only do inv/getdata for xthinblocks and so we must have headersfirst turned off
@@ -4397,10 +4437,21 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
             State(pfrom->GetId())->fPreferHeaders = false;
         else
             State(pfrom->GetId())->fPreferHeaders = true;
+        return true;
     }
+};
 
+class InvMessage : public NetworkMessage {
+public:
+    ~InvMessage() {}
 
-    else if (strCommand == NetMsgType::INV)
+    InvMessage(CNode * const pFrom,
+               const CChainParams& chain_params,
+               const bool x_thin_enabled,
+               const bool fReindex) :
+            NetworkMessage(pFrom , chain_params, x_thin_enabled, fReindex) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         if (Application::uahfChainState() == Application::UAHFWaiting) {
             // this means we are not just in initial block download, we are in a state
@@ -4439,7 +4490,7 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
 
             if (inv.type == MSG_BLOCK) {
                 UpdateBlockAvailability(pfrom->GetId(), inv.hash);
-                if (!fAlreadyHave && !fImporting && !fReindex && !mapBlocksInFlight.count(inv.hash)) {
+                if (!fAlreadyHave && !fImporting && !fReindexing && !mapBlocksInFlight.count(inv.hash)) {
                     // First request the headers preceding the announced block. In the normal fully-synced
                     // case where a new block is announced that succeeds the current tip (no reorganization),
                     // there are no such headers.
@@ -4501,7 +4552,7 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
             {
                 if (fBlocksOnly)
                     LogPrint("net", "transaction (%s) inv sent in violation of protocol peer=%d\n", inv.hash.ToString(), pfrom->id);
-                else if (!fAlreadyHave && !fImporting && !fReindex)
+                else if (!fAlreadyHave && !fImporting && !fReindexing)
                     pfrom->AskFor(inv);
             }
 
@@ -4516,10 +4567,17 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
 
         if (!vToFetch.empty())
             pfrom->PushMessage(NetMsgType::GETDATA, vToFetch);
+        return true;
     }
+};
 
+class GetDataMessage : public NetworkMessage {
+public:
+    ~GetDataMessage(){}
 
-    else if (strCommand == NetMsgType::GETDATA)
+    GetDataMessage(CNode * const pFrom, const CChainParams& chain_params) : NetworkMessage(pFrom, chain_params) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         std::vector<CInv> vInv;
         vRecv >> vInv;
@@ -4537,10 +4595,19 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
 
         pfrom->vRecvGetData.insert(pfrom->vRecvGetData.end(), vInv.begin(), vInv.end());
         ProcessGetData(pfrom, chainparams.GetConsensus());
+        return true;
     }
+};
 
+class GetBlocksMessage : public NetworkMessage {
+public:
+    ~GetBlocksMessage() {}
 
-    else if (strCommand == NetMsgType::GETBLOCKS)
+    GetBlocksMessage(CNode * const pFrom,
+                     const CChainParams &chain_params) :
+            NetworkMessage(pFrom , chain_params) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         CBlockLocator locator;
         uint256 hashStop;
@@ -4581,10 +4648,17 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
                 break;
             }
         }
+        return true;
     }
+};
 
+class GetHeadersMessage : public NetworkMessage {
+public:
+    ~GetHeadersMessage() {}
 
-    else if (strCommand == NetMsgType::GETHEADERS)
+    GetHeadersMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         CBlockLocator locator;
         uint256 hashStop;
@@ -4630,10 +4704,18 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         // pindexBestHeaderSent to be our tip.
         nodestate->pindexBestHeaderSent = pindex ? pindex : chainActive.Tip();
         pfrom->PushMessage(NetMsgType::HEADERS, vHeaders);
+
+        return true;
     }
+};
 
+class TxMessage : public NetworkMessage {
+public:
+    ~TxMessage() {}
 
-    else if (strCommand == NetMsgType::TX)
+    TxMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         // Stop processing the transaction early if
         // We are in blocks only mode and peer is either not whitelisted or whitelistrelay is off
@@ -4747,7 +4829,7 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         int nDoS = 0;
         if (state.IsInvalid(nDoS)) {
             logWarning(Log::Mempool) << tx.GetHash() << "from peer" << pfrom->id <<"was not accepted"
-                << FormatStateMessage(state);
+                                     << FormatStateMessage(state);
             if (state.GetRejectCode() < REJECT_INTERNAL) // Never send AcceptToMemoryPool's internal codes over P2P
                 pfrom->PushMessage(NetMsgType::REJECT, strCommand, (unsigned char)state.GetRejectCode(),
                                    state.GetRejectReason().substr(0, MAX_REJECT_MESSAGE_LENGTH), inv.hash);
@@ -4755,10 +4837,21 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
                 Misbehaving(pfrom->GetId(), nDoS);
         }
         FlushStateToDisk(state, FLUSH_STATE_PERIODIC);
+
+        return true;
     }
+};
 
+class HeadersMessage : public NetworkMessage {
+public:
+    ~HeadersMessage() {}
 
-    else if (strCommand == NetMsgType::HEADERS && !fImporting && !fReindex) // Ignore headers received while importing
+    HeadersMessage(CNode * const pFrom,
+                   const CChainParams& chain_params,
+                   const bool x_thin_enabled) :
+            NetworkMessage(pFrom, chain_params, x_thin_enabled) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         std::vector<CBlockHeader> headers;
 
@@ -4783,22 +4876,22 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
 
         CBlockIndex *pindexLast = NULL;
         BOOST_FOREACH(const CBlockHeader& header, headers) {
-            CValidationState state;
-            if (pindexLast != NULL && header.hashPrevBlock != pindexLast->GetBlockHash()) {
-                Misbehaving(pfrom->GetId(), 20);
-                logWarning(Log::Net) << "p2p HEADERS command received non-continues headers sequence from" << pfrom->GetId();
-                return false;
-            }
-            if (!AcceptBlockHeader(header, state, chainparams, &pindexLast)) {
-                int nDoS;
-                if (state.IsInvalid(nDoS)) {
-                    if (nDoS > 0)
-                        Misbehaving(pfrom->GetId(), nDoS);
-                    logWarning(Log::Net) << "p2p HEADERS command received invalid header from" << pfrom->GetId();
-                    return false;
-                }
-            }
-        }
+                        CValidationState state;
+                        if (pindexLast != NULL && header.hashPrevBlock != pindexLast->GetBlockHash()) {
+                            Misbehaving(pfrom->GetId(), 20);
+                            logWarning(Log::Net) << "p2p HEADERS command received non-continues headers sequence from" << pfrom->GetId();
+                            return false;
+                        }
+                        if (!AcceptBlockHeader(header, state, chainparams, &pindexLast)) {
+                            int nDoS;
+                            if (state.IsInvalid(nDoS)) {
+                                if (nDoS > 0)
+                                    Misbehaving(pfrom->GetId(), nDoS);
+                                logWarning(Log::Net) << "p2p HEADERS command received invalid header from" << pfrom->GetId();
+                                return false;
+                            }
+                        }
+                    }
 
         if (pindexLast)
             UpdateBlockAvailability(pfrom->GetId(), pindexLast->GetBlockHash());
@@ -4808,7 +4901,7 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
             // TODO: optimize: if pindexLast is an ancestor of chainActive.Tip or pindexBestHeader, continue
             // from there instead.
             logDebug(Log::Net).nospace() << "more getheaders (" << pindexLast->nHeight
-                << ") to end to peer=" << pfrom->id << "(startheight:" << pfrom->nStartingHeight << ")";
+                                         << ") to end to peer=" << pfrom->id << "(startheight:" << pfrom->nStartingHeight << ")";
             pfrom->PushMessage(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexLast), uint256());
         }
 
@@ -4825,7 +4918,7 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
             // Calculate all the blocks we'd need to switch to pindexLast, up to a limit.
             while (pindexWalk && !chainActive.Contains(pindexWalk) && vToFetch.size() <= MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
                 if (!(pindexWalk->nStatus & BLOCK_HAVE_DATA) &&
-                        !mapBlocksInFlight.count(pindexWalk->GetBlockHash())) {
+                    !mapBlocksInFlight.count(pindexWalk->GetBlockHash())) {
                     // We don't have this block, and it's not yet in flight.
                     vToFetch.push_back(pindexWalk);
                 }
@@ -4837,20 +4930,20 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
             // direct fetch and rely on parallel download instead.
             if (!chainActive.Contains(pindexWalk)) {
                 LogPrint("net", "Large reorg, won't direct fetch to %s (%d)\n",
-                        pindexLast->GetBlockHash().ToString(),
-                        pindexLast->nHeight);
+                         pindexLast->GetBlockHash().ToString(),
+                         pindexLast->nHeight);
             } else if (!xthinEnabled) { // We don't yet support headers-first for XThinblocks.
                 std::vector<CInv> vGetData;
                 // Download as much as possible, from earliest to latest.
                 BOOST_REVERSE_FOREACH(CBlockIndex *pindex, vToFetch) {
-                    if (nodestate->nBlocksInFlight >= MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
-                        // Can't download any more from this peer
-                        break;
-                    }
-                    vGetData.push_back(CInv(MSG_BLOCK, pindex->GetBlockHash()));
-                    MarkBlockAsInFlight(pfrom->GetId(), pindex->GetBlockHash(), chainparams.GetConsensus(), pindex);
-                    logDebug(Log::Net) << "Requesting block" << pindex->GetBlockHash() << "from  peer:" << pfrom->id;
-                }
+                                if (nodestate->nBlocksInFlight >= MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
+                                    // Can't download any more from this peer
+                                    break;
+                                }
+                                vGetData.push_back(CInv(MSG_BLOCK, pindex->GetBlockHash()));
+                                MarkBlockAsInFlight(pfrom->GetId(), pindex->GetBlockHash(), chainparams.GetConsensus(), pindex);
+                                logDebug(Log::Net) << "Requesting block" << pindex->GetBlockHash() << "from  peer:" << pfrom->id;
+                            }
                 if (vGetData.size() > 1) {
                     logDebug(Log::Net) << "Downloading blocks toward" << pindexLast->GetBlockHash() << "height:" << pindexLast->nHeight;
                 }
@@ -4861,10 +4954,20 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         }
 
         CheckBlockIndex();
+        return true;
     }
+};
 
-    // BUIP010 Xtreme Thinblocks: begin section
-    else if (strCommand == NetMsgType::GET_XTHIN && !fImporting && !fReindex) // Ignore blocks received while importing
+class GetXThinMessage : public NetworkMessage {
+public:
+    ~GetXThinMessage() {}
+
+    GetXThinMessage(CNode * const pFrom,
+                    const CChainParams& chain_params,
+                    const bool x_thin_enabled) :
+            NetworkMessage(pFrom, chain_params, x_thin_enabled) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         if (!xthinEnabled) {
             LOCK(cs_main);
@@ -4884,7 +4987,17 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         pfrom->vRecvGetData.insert(pfrom->vRecvGetData.end(), inv);
         ProcessGetData(pfrom, chainparams.GetConsensus());
     }
-    else if (strCommand == NetMsgType::XTHINBLOCK  && !fImporting && !fReindex) // Ignore blocks received while importing
+};
+
+class XThinBlockMessage : public NetworkMessage {
+public:
+    ~XThinBlockMessage() {}
+
+    XThinBlockMessage(CNode * const pFrom,
+                      const bool x_thin_enabled) :
+            NetworkMessage(pFrom, x_thin_enabled) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         if (!xthinEnabled) {
             LOCK(cs_main);
@@ -4919,12 +5032,21 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         }
 
         if (!fAlreadyHave) {
-           if (thinBlock.process(pfrom))
+            if (thinBlock.process(pfrom))
                 HandleBlockMessage(pfrom, strCommand, pfrom->thinBlock,  thinBlock.GetInv());  // clears the thin block
         }
     }
+};
 
-    else if (strCommand == NetMsgType::XBLOCKTX && !fImporting && !fReindex) // handle Re-requested thinblock transactions
+class XBlockTxMessage : public NetworkMessage {
+public:
+    ~XBlockTxMessage() {}
+
+    XBlockTxMessage(CNode * const pFrom,
+                    const bool x_thin_enabled) :
+            NetworkMessage(pFrom, x_thin_enabled) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         if (!xthinEnabled) {
             LOCK(cs_main);
@@ -4949,8 +5071,8 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         // Create the mapMissingTx from all the supplied tx's in the xthinblock
         std::map<uint64_t, CTransaction> mapMissingTx;
         BOOST_FOREACH(CTransaction tx, thinBlockTx.vMissingTx) {
-            mapMissingTx[tx.GetHash().GetCheapHash()] = tx;
-        }
+                        mapMissingTx[tx.GetHash().GetCheapHash()] = tx;
+                    }
 
         int count=0;
         for (size_t i = 0; i < pfrom->thinBlock.vtx.size(); ++i) {
@@ -4995,9 +5117,17 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         else {
             LogPrint("thin", "Failed to retrieve all transactions for block\n");
         }
+        return true;
     }
+};
 
-    else if (strCommand == NetMsgType::GET_XBLOCKTX && !fImporting && !fReindex) // return Re-requested xthinblock transactions
+class GetXBlockTxMessage : public NetworkMessage {
+public:
+    ~GetXBlockTxMessage() {}
+
+    GetXBlockTxMessage(CNode * const pFrom, const bool x_thin_enabled) : NetworkMessage(pFrom, x_thin_enabled) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         if (!xthinEnabled) {
             LOCK(cs_main);
@@ -5076,12 +5206,18 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         pfrom->AddInventoryKnown(inv);
         CXThinBlockTx thinBlockTx(thinRequestBlockTx.blockhash, vTx);
         pfrom->PushMessage(NetMsgType::XBLOCKTX, thinBlockTx);
+
+        return true;
     }
-    // BUIP010 Xtreme Thinblocks: end section
+};
 
+class BlockMessage : public NetworkMessage {
+public:
+    ~BlockMessage() {}
 
-    else if (strCommand == NetMsgType::BLOCK && !fImporting && !fReindex) // Ignore blocks received while importing
-    {
+    BlockMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand) {
         CBlock block;
         try {
             vRecv >> block;
@@ -5104,10 +5240,17 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
             orphans.push_back(block.vtx[i].GetHash());
         }
         CTxOrphanCache::instance()->EraseOrphans(orphans);
+        return true;
     }
+};
 
+class GetAddrMessage : public NetworkMessage {
+public:
+    ~GetAddrMessage() {}
 
-    else if (strCommand == NetMsgType::GETADDR)
+    GetAddrMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         // This asymmetric behavior for inbound and outbound connections was introduced
         // to prevent a fingerprinting attack: an attacker can send specific fake addresses
@@ -5130,11 +5273,18 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         pfrom->vAddrToSend.clear();
         std::vector<CAddress> vAddr = addrman.GetAddr();
         BOOST_FOREACH(const CAddress &addr, vAddr)
-            pfrom->PushAddress(addr);
+                        pfrom->PushAddress(addr);
+        return true;
     }
+};
 
+class MemPoolMessage : public NetworkMessage {
+public:
+    ~MemPoolMessage() {}
 
-    else if (strCommand == NetMsgType::MEMPOOL)
+    MemPoolMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         if (CNode::OutboundTargetReached(false) && !pfrom->fWhitelisted)
         {
@@ -5148,25 +5298,33 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         mempool.queryHashes(vtxid);
         std::vector<CInv> vInv;
         BOOST_FOREACH(uint256& hash, vtxid) {
-            CInv inv(MSG_TX, hash);
-            if (pfrom->pfilter) {
-                CTransaction tx;
-                bool fInMemPool = mempool.lookup(hash, tx);
-                if (!fInMemPool) continue; // another thread removed since queryHashes, maybe...
-                if (!pfrom->pfilter->IsRelevantAndUpdate(tx)) continue;
-            }
-            vInv.push_back(inv);
-            if (vInv.size() == MAX_INV_SZ) {
-                pfrom->PushMessage(NetMsgType::INV, vInv);
-                vInv.clear();
-            }
-        }
+                        CInv inv(MSG_TX, hash);
+                        if (pfrom->pfilter) {
+                            CTransaction tx;
+                            bool fInMemPool = mempool.lookup(hash, tx);
+                            if (!fInMemPool) continue; // another thread removed since queryHashes, maybe...
+                            if (!pfrom->pfilter->IsRelevantAndUpdate(tx)) continue;
+                        }
+                        vInv.push_back(inv);
+                        if (vInv.size() == MAX_INV_SZ) {
+                            pfrom->PushMessage(NetMsgType::INV, vInv);
+                            vInv.clear();
+                        }
+                    }
         if (vInv.size() > 0)
             pfrom->PushMessage(NetMsgType::INV, vInv);
+
+        return true;
     }
+};
 
+class PingMessage : public NetworkMessage {
+public:
+    ~PingMessage() {}
 
-    else if (strCommand == NetMsgType::PING)
+    PingMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         if (pfrom->nVersion > BIP0031_VERSION)
         {
@@ -5185,10 +5343,17 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
             // return very quickly.
             pfrom->PushMessage(NetMsgType::PONG, nonce);
         }
+        return true;
     }
+};
 
+class PongMessage : public NetworkMessage {
+public:
+    ~PongMessage() {}
 
-    else if (strCommand == NetMsgType::PONG)
+    PongMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         int64_t pingUsecEnd = nTimeReceived;
         uint64_t nonce = 0;
@@ -5233,19 +5398,27 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
 
         if (!(sProblem.empty())) {
             LogPrint("net", "pong peer=%d: %s, %x expected, %x received, %u bytes\n",
-                pfrom->id,
-                sProblem,
-                pfrom->nPingNonceSent,
-                nonce,
-                nAvail);
+                     pfrom->id,
+                     sProblem,
+                     pfrom->nPingNonceSent,
+                     nonce,
+                     nAvail);
         }
         if (bPingFinished) {
             pfrom->nPingNonceSent = 0;
         }
+
+        return true;
     }
+};
 
+class FilterLoadMessage : public NetworkMessage {
+public:
+    ~FilterLoadMessage() {}
 
-    else if (strCommand == NetMsgType::FILTERLOAD)
+    FilterLoadMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         if (!GetBoolArg("-peerbloomfilters", true)) {
             LOCK(cs_main);
@@ -5268,10 +5441,18 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
             pfrom->pfilter->UpdateEmptyFull();
         }
         pfrom->fRelayTxes = true;
+
+        return true;
     }
+};
 
+class FilterAddMessage : public NetworkMessage {
+public:
+    ~FilterAddMessage() {}
 
-    else if (strCommand == NetMsgType::FILTERADD)
+    FilterAddMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         if (!GetBoolArg("-peerbloomfilters", true)) {
             LOCK(cs_main);
@@ -5294,10 +5475,17 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
             else
                 Misbehaving(pfrom->GetId(), 100);
         }
+        return true;
     }
+};
 
+class FilterClearMessage : public NetworkMessage {
+public:
+    ~FilterClearMessage() {}
 
-    else if (strCommand == NetMsgType::FILTERCLEAR)
+    FilterClearMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         if (!GetBoolArg("-peerbloomfilters", true)) {
             LOCK(cs_main);
@@ -5308,10 +5496,17 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         delete pfrom->pfilter;
         pfrom->pfilter = new CBloomFilter();
         pfrom->fRelayTxes = true;
+        return true;
     }
+};
 
+class RejectMessage : public NetworkMessage {
+public:
+    ~RejectMessage() {}
 
-    else if (strCommand == NetMsgType::REJECT)
+    RejectMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         if (fDebug) {
             try {
@@ -5333,20 +5528,48 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
                 LogPrint("net", "Unparseable reject message received\n");
             }
         }
+        return true;
     }
-    else if (strCommand == NetMsgType::XPEDITEDREQUEST)
+};
+
+class ExpeditedRequestMessage : public NetworkMessage {
+public:
+    ~ExpeditedRequestMessage() {}
+
+    ExpeditedRequestMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
-        HandleExpeditedRequest(vRecv,pfrom);
+        HandleExpeditedRequest(vRecv, pfrom);
+        return true;
     }
-    else if (strCommand == NetMsgType::XPEDITEDBLK)
+};
+
+class ExpeditedBlockMessage : public NetworkMessage {
+public:
+    ~ExpeditedBlockMessage() {}
+
+    ExpeditedBlockMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
-        HandleExpeditedBlock(vRecv,pfrom);
+        HandleExpeditedBlock(vRecv, pfrom);
+        return true;
     }
-    else if (strCommand == NetMsgType::VERSION2)
+};
+
+class Version2Message : public NetworkMessage {
+public:
+    ~Version2Message() {}
+
+    Version2Message(CNode * const pFrom) : NetworkMessage(pFrom) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
     {
         // Each connection can only send one version message
         if (pfrom->addrFromPort != 0) {
-            pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_DUPLICATE, std::string("Duplicate version2 message"));
+            pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_DUPLICATE,
+                               std::string("Duplicate version2 message"));
             LOCK(cs_main);
             Misbehaving(pfrom->GetId(), 15);
             return false;
@@ -5354,21 +5577,162 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
 
         vRecv >> pfrom->addrFromPort;
         pfrom->PushMessage(NetMsgType::VERACK2);
+        return true;
+    }
+};
+
+class VersionAck2Message : public NetworkMessage {
+public:
+    ~VersionAck2Message() {}
+
+    VersionAck2Message(CNode * const pFrom) : NetworkMessage(pFrom) {}
+
+    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    {
+        CheckAndRequestExpeditedBlocks(pfrom);
+        return true;
+    }
+};
+
+bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vRecv, int64_t nTimeReceived)
+{
+    const CChainParams& chainparams = Params();
+    RandAddSeedPerfmon();
+    const bool fReindex = Blocks::DB::instance()->isReindexing();
+    logDebug(Log::Net) << "received:" << SanitizeString(strCommand) << "bytes:" << vRecv.size() << "peer:" << pfrom->id;
+    if (mapArgs.count("-dropmessagestest") && GetRand(atoi(mapArgs["-dropmessagestest"])) == 0)
+    {
+        LogPrintf("dropmessagestest DROPPING RECV MESSAGE\n");
+        return true;
+    }
+
+    const bool xthinEnabled = IsThinBlocksEnabled();
+
+    NetworkMessage *networkMessage = nullptr;
+    if (strCommand == NetMsgType::VERSION)
+    {
+        networkMessage = new VersionMessage(pfrom);
+    }
+    else if (pfrom->nVersion == 0)
+    {
+        // Must have a version message before anything else
+        Misbehaving(pfrom->GetId(), 1);
+        return false;
+    }
+    else if (strCommand == NetMsgType::VERACK)
+    {
+        networkMessage = new VerAckMessage(pfrom, xthinEnabled);
+    }
+    else if (strCommand == NetMsgType::ADDR && (Application::uahfChainState() == Application::UAHFDisabled) == ((pfrom->nServices & NODE_BITCOIN_CASH) == 0))
+    {
+        networkMessage = new AddrMessage(pfrom);
+    }
+    else if (strCommand == NetMsgType::SENDHEADERS)
+    {
+        networkMessage = new SendHeadersMessage(pfrom, xthinEnabled);
+    }
+    else if (strCommand == NetMsgType::INV)
+    {
+        networkMessage = new InvMessage(pfrom, chainparams, xthinEnabled, fReindex);
+    }
+    else if (strCommand == NetMsgType::GETDATA)
+    {
+        networkMessage = new GetDataMessage(pfrom, chainparams);
+    }
+    else if (strCommand == NetMsgType::GETBLOCKS)
+    {
+        networkMessage = new GetBlocksMessage(pfrom, chainparams);
+    }
+    else if (strCommand == NetMsgType::GETHEADERS)
+    {
+        networkMessage = new GetHeadersMessage(pfrom);
+    }
+    else if (strCommand == NetMsgType::TX)
+    {
+        networkMessage = new TxMessage(pfrom);
+    }
+    else if (strCommand == NetMsgType::HEADERS && !fImporting && !fReindex) // Ignore headers received while importing
+    {
+        networkMessage = new HeadersMessage(pfrom, chainparams, xthinEnabled);
+    }
+    // BUIP010 Xtreme Thinblocks: begin section
+    else if (strCommand == NetMsgType::GET_XTHIN && !fImporting && !fReindex) // Ignore blocks received while importing
+    {
+        networkMessage = new GetXThinMessage(pfrom, chainparams, xthinEnabled);
+    }
+    else if (strCommand == NetMsgType::XTHINBLOCK  && !fImporting && !fReindex) // Ignore blocks received while importing
+    {
+        networkMessage = new XThinBlockMessage(pfrom, xthinEnabled);
+    }
+    else if (strCommand == NetMsgType::XBLOCKTX && !fImporting && !fReindex) // handle Re-requested thinblock transactions
+    {
+        networkMessage = new XBlockTxMessage(pfrom, xthinEnabled);
+    }
+    else if (strCommand == NetMsgType::GET_XBLOCKTX && !fImporting && !fReindex) // return Re-requested xthinblock transactions
+    {
+        networkMessage = new GetXBlockTxMessage(pfrom, xthinEnabled);
+    }
+    // BUIP010 Xtreme Thinblocks: end section
+    else if (strCommand == NetMsgType::BLOCK && !fImporting && !fReindex) // Ignore blocks received while importing
+    {
+        networkMessage = new BlockMessage(pfrom);
+    }
+    else if (strCommand == NetMsgType::GETADDR)
+    {
+        networkMessage = new GetAddrMessage(pfrom);
+    }
+    else if (strCommand == NetMsgType::MEMPOOL)
+    {
+        networkMessage = new MemPoolMessage(pfrom);
+    }
+    else if (strCommand == NetMsgType::PING)
+    {
+        networkMessage = new PingMessage(pfrom);
+    }
+    else if (strCommand == NetMsgType::PONG)
+    {
+        networkMessage = new PongMessage(pfrom);
+    }
+    else if (strCommand == NetMsgType::FILTERLOAD)
+    {
+        networkMessage = new FilterLoadMessage(pfrom);
+    }
+    else if (strCommand == NetMsgType::FILTERADD)
+    {
+        networkMessage = new FilterAddMessage(pfrom);
+    }
+    else if (strCommand == NetMsgType::FILTERCLEAR)
+    {
+        networkMessage = new FilterClearMessage(pfrom);
+    }
+    else if (strCommand == NetMsgType::REJECT)
+    {
+        networkMessage = new RejectMessage(pfrom);
+    }
+    else if (strCommand == NetMsgType::XPEDITEDREQUEST)
+    {
+        networkMessage = new ExpeditedRequestMessage(pfrom);
+    }
+    else if (strCommand == NetMsgType::XPEDITEDBLK)
+    {
+        networkMessage = new ExpeditedBlockMessage(pfrom);
+    }
+    else if (strCommand == NetMsgType::VERSION2)
+    {
+        networkMessage = new Version2Message(pfrom);
     }
     else if (strCommand == NetMsgType::VERACK2)
     {
-        CheckAndRequestExpeditedBlocks(pfrom);
+        networkMessage = new VersionAck2Message(pfrom);
     }
-
     else
     {
         // Ignore unknown commands for extensibility
         logDebug(Log::Net) << "Unknown command" << SanitizeString(strCommand) << "from peer:" << pfrom->id;
     }
 
-
-
-    return true;
+    // FIX-ME: Perhaps a try/catch here according to Ticket 224 description by @zander
+    return networkMessage->handle(vRecv, nTimeReceived, strCommand);;
 }
 
 // requires LOCK(cs_vRecvMsg)
