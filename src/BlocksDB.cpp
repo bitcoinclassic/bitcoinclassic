@@ -647,6 +647,7 @@ Streaming::ConstBuffer Blocks::DBPrivate::writeBlock(int blockHeight, const Stre
     if (newFile || (!useBlk && info.nUndoSize == 0)) {
         const auto path = getFilepathForIndex(pos.nFile, useBlk ? "blk" : "rev");
         logDebug(Log::DB) << "Starting new file" << path.string();
+        std::lock_guard<std::mutex> lock_(lock);
         size_t newFileSize = std::max(blockSize, (int) (useBlk ? BLOCKFILE_CHUNK_SIZE : UNDOFILE_CHUNK_SIZE));
 #ifdef WIN32
         // due to the fact that on Windows we can't re-map, we skip the growing steps.
@@ -666,8 +667,11 @@ Streaming::ConstBuffer Blocks::DBPrivate::writeBlock(int blockHeight, const Stre
         const auto path = getFilepathForIndex(pos.nFile, useBlk ? "blk" : "rev");
         logDebug(Log::DB) << "File" << path.string() << "needs to be resized";
         const size_t newFileSize = fileSize + (useBlk ? BLOCKFILE_CHUNK_SIZE : UNDOFILE_CHUNK_SIZE);
-        boost::filesystem::resize_file(path, newFileSize);
-        fileHasGrown(pos.nFile);
+        { // scope the lock
+            std::lock_guard<std::mutex> lock_(lock);
+            boost::filesystem::resize_file(path, newFileSize);
+            useBlk ? fileHasGrown(pos.nFile) : revertFileHasGrown(pos.nFile);
+        }
         buf = mapFile(pos.nFile, type, &fileSize);
     }
 #endif
@@ -726,8 +730,7 @@ std::shared_ptr<char> Blocks::DBPrivate::mapFile(int fileIndex, Blocks::BlockTyp
                     assert(fileIndex >= 0 && fileIndex < (int) list.size());
                     if (df == list[fileIndex])
                         // invalidate entry -- note that it's possible
-                        // df != list[fileIndex] if fileHasGrown()
-                        // was called for this fileIndex.
+                        // df != list[fileIndex] if we resized the file
                         list[fileIndex] = nullptr;
                 }
                 // no need to hold lock on delete -- auto-closes mmap'd file.
@@ -744,11 +747,9 @@ std::shared_ptr<char> Blocks::DBPrivate::mapFile(int fileIndex, Blocks::BlockTyp
     return buf;
 }
 
-// called by file write code to make new buffers returned after a file write
-// correspond to new mmap's of the right size.
+// we expect the mutex `lock` to be locked before calling this method
 void Blocks::DBPrivate::fileHasGrown(int fileIndex)
 {
-    std::lock_guard<std::mutex> lock_(lock);
     if (fileIndex < 0 || fileIndex >= int(datafiles.size()))
         // silently ignore invalid usage as it creates no harm
         return;
@@ -759,9 +760,9 @@ void Blocks::DBPrivate::fileHasGrown(int fileIndex)
     datafiles[fileIndex] = nullptr;
 }
 
+// we expect the mutex `lock` to be locked before calling this method
 void Blocks::DBPrivate::revertFileHasGrown(int fileIndex)
 {
-    std::lock_guard<std::mutex> lock_(lock);
     if (fileIndex < 0 || fileIndex >= int(revertDatafiles.size()))
         // silently ignore invalid usage as it creates no harm
         return;
