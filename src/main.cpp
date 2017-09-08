@@ -81,6 +81,12 @@ static bool IsSuperMajority(int minVersion, const CBlockIndex* pstart, unsigned 
 
 const std::string strMessageMagic = "Bitcoin Signed Message:\n";
 
+CCriticalSection cs_LastBlockFile;
+std::vector<CBlockFileInfo> vinfoBlockFile;
+int nLastBlockFile = 0;
+/** Dirty block file entries. */
+std::set<int> setDirtyFileInfo;
+
 // Internal stuff
 namespace {
 
@@ -120,9 +126,6 @@ namespace {
      */
     std::multimap<CBlockIndex*, CBlockIndex*> mapBlocksUnlinked;
 
-    CCriticalSection cs_LastBlockFile;
-    std::vector<CBlockFileInfo> vinfoBlockFile;
-    int nLastBlockFile = 0;
     /** Global flag to indicate we should check to see if there are
      *  block/undo files that should be deleted.  Set on startup
      *  or if we allocate more file space when we're in prune mode
@@ -180,9 +183,6 @@ namespace {
 
     /** Dirty block index entries. */
     std::set<CBlockIndex*> setDirtyBlockIndex;
-
-    /** Dirty block file entries. */
-    std::set<int> setDirtyFileInfo;
 
     /** Number of peers from which we're downloading blocks. */
     int nPeersWithValidatedDownloads = 0;

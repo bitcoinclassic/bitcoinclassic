@@ -90,7 +90,8 @@ BITCOIN_TESTS =\
   test/univalue_tests.cpp \
   test/util_tests.cpp \
   test/TestConnections.cpp \
-  test/TestBuffers.cpp
+  test/TestBuffers.cpp \
+  test/blocksdb_mapfile_tests.cpp
 
 if ENABLE_WALLET
 BITCOIN_TESTS += \

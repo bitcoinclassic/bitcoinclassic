@@ -21,6 +21,8 @@
 
 #include <boost/variant.hpp>
 
+#include <streaming/BufferPool.h>
+
 static const unsigned int MAX_SIZE = 0x02000000;
 
 /**
@@ -1085,5 +1087,11 @@ public:
         return nSize;
     }
 };
+
+template<typename T>
+inline Streaming::BufferPool &operator<<(Streaming::BufferPool &pool, const T& obj) {
+    ::Serialize(pool, obj, 0, 0);
+    return pool;
+}
 
 #endif // BITCOIN_SERIALIZE_H
