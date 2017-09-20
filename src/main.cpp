@@ -4166,49 +4166,30 @@ class NetworkMessage {
 public:
     virtual ~NetworkMessage() {}
 
-    NetworkMessage(CNode * const pFrom,
-                   const CChainParams &chain_params,
-                   const bool x_thin_enabled,
-                   const bool fReindex) :
-            pfrom(pFrom),
-            chainparams(chain_params),
-            xthinEnabled(x_thin_enabled),
-            fReindexing(fReindex) {}
+    NetworkMessage() {}
 
-    NetworkMessage(CNode * const pFrom,
-                   const CChainParams &chain_params,
-                   const bool x_thin_enabled) :
-            NetworkMessage(pFrom, chain_params, x_thin_enabled, false) {}
-
-    NetworkMessage(CNode * const pFrom,
-                   const CChainParams &chain_params) :
-            NetworkMessage(pFrom, chain_params, false, false) {}
-
-    NetworkMessage(CNode * const pFrom,
-                   const bool x_thin_enabled) :
-            NetworkMessage(pFrom, Params(), x_thin_enabled, false) {}
-
-    NetworkMessage(CNode * const pFrom) :
-            NetworkMessage(pFrom, Params(), false, false) {}
-
-    virtual bool handle(CDataStream &vRecv,
+    virtual bool handle(CNode * const pfrom,
+                        CDataStream &vRecv,
                         int64_t nTimeReceived,
-                        std::string &strCommand) = 0;
-
-protected:
-    CNode * const pfrom;
-    const CChainParams& chainparams;
-    const bool fReindexing;
-    const bool xthinEnabled;
+                        std::string &strCommand,
+                        const CChainParams &chainparams,
+                        const bool xthinEnabled,
+                        const bool fReindexing) = 0;
 };
 
 class VersionMessage : public NetworkMessage {
 public:
     ~VersionMessage() {}
 
-    VersionMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+    VersionMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived, std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chain_params,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         // Each connection can only send one version message
         if (pfrom->nVersion != 0) {
@@ -4319,9 +4300,15 @@ class VerAckMessage : public NetworkMessage {
 public:
     ~VerAckMessage() {}
 
-    VerAckMessage(CNode * const pFrom, const bool x_thin_enabled) : NetworkMessage(pFrom, x_thin_enabled) {}
+    VerAckMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived, std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         pfrom->SetRecvVersion(std::min(pfrom->nVersion, PROTOCOL_VERSION));
 
@@ -4354,9 +4341,15 @@ class AddrMessage : public NetworkMessage {
 public:
     ~AddrMessage() {}
 
-    AddrMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+    AddrMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived, std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         std::vector<CAddress> vAddr;
         vRecv >> vAddr;
@@ -4395,14 +4388,14 @@ public:
                     hashRand = Hash(BEGIN(hashRand), END(hashRand));
                     std::multimap<uint256, CNode *> mapMix;
                     BOOST_FOREACH(CNode *pnode, vNodes) {
-                                    if (pnode->nVersion < CADDR_TIME_VERSION)
-                                        continue;
-                                    unsigned int nPointer;
-                                    memcpy(&nPointer, &pnode, sizeof(nPointer));
-                                    uint256 hashKey = ArithToUint256(UintToArith256(hashRand) ^ nPointer);
-                                    hashKey = Hash(BEGIN(hashKey), END(hashKey));
-                                    mapMix.insert(std::make_pair(hashKey, pnode));
-                                }
+                        if (pnode->nVersion < CADDR_TIME_VERSION)
+                            continue;
+                        unsigned int nPointer;
+                        memcpy(&nPointer, &pnode, sizeof(nPointer));
+                        uint256 hashKey = ArithToUint256(UintToArith256(hashRand) ^ nPointer);
+                        hashKey = Hash(BEGIN(hashKey), END(hashKey));
+                        mapMix.insert(std::make_pair(hashKey, pnode));
+                    }
                     int nRelayNodes = fReachable ? 2
                                                  : 1; // limited relaying of addresses outside our network(s)
                     for (std::multimap<uint256, CNode *>::iterator mi = mapMix.begin();
@@ -4427,9 +4420,15 @@ class SendHeadersMessage : public NetworkMessage {
 public:
     ~SendHeadersMessage() {}
 
-    SendHeadersMessage(CNode * const pFrom, const bool x_thin_enabled) : NetworkMessage(pFrom, x_thin_enabled) {}
+    SendHeadersMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         LOCK(cs_main);
         // BUIP010 Xtreme Thinblocks: We only do inv/getdata for xthinblocks and so we must have headersfirst turned off
@@ -4445,13 +4444,15 @@ class InvMessage : public NetworkMessage {
 public:
     ~InvMessage() {}
 
-    InvMessage(CNode * const pFrom,
-               const CChainParams& chain_params,
-               const bool x_thin_enabled,
-               const bool fReindex) :
-            NetworkMessage(pFrom , chain_params, x_thin_enabled, fReindex) {}
+    InvMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         if (Application::uahfChainState() == Application::UAHFWaiting) {
             // this means we are not just in initial block download, we are in a state
@@ -4575,9 +4576,15 @@ class GetDataMessage : public NetworkMessage {
 public:
     ~GetDataMessage(){}
 
-    GetDataMessage(CNode * const pFrom, const CChainParams& chain_params) : NetworkMessage(pFrom, chain_params) {}
+    GetDataMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         std::vector<CInv> vInv;
         vRecv >> vInv;
@@ -4603,11 +4610,15 @@ class GetBlocksMessage : public NetworkMessage {
 public:
     ~GetBlocksMessage() {}
 
-    GetBlocksMessage(CNode * const pFrom,
-                     const CChainParams &chain_params) :
-            NetworkMessage(pFrom , chain_params) {}
+    GetBlocksMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         CBlockLocator locator;
         uint256 hashStop;
@@ -4656,9 +4667,15 @@ class GetHeadersMessage : public NetworkMessage {
 public:
     ~GetHeadersMessage() {}
 
-    GetHeadersMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+    GetHeadersMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         CBlockLocator locator;
         uint256 hashStop;
@@ -4713,9 +4730,15 @@ class TxMessage : public NetworkMessage {
 public:
     ~TxMessage() {}
 
-    TxMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+    TxMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         // Stop processing the transaction early if
         // We are in blocks only mode and peer is either not whitelisted or whitelistrelay is off
@@ -4846,12 +4869,15 @@ class HeadersMessage : public NetworkMessage {
 public:
     ~HeadersMessage() {}
 
-    HeadersMessage(CNode * const pFrom,
-                   const CChainParams& chain_params,
-                   const bool x_thin_enabled) :
-            NetworkMessage(pFrom, chain_params, x_thin_enabled) {}
+    HeadersMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         std::vector<CBlockHeader> headers;
 
@@ -4962,12 +4988,15 @@ class GetXThinMessage : public NetworkMessage {
 public:
     ~GetXThinMessage() {}
 
-    GetXThinMessage(CNode * const pFrom,
-                    const CChainParams& chain_params,
-                    const bool x_thin_enabled) :
-            NetworkMessage(pFrom, chain_params, x_thin_enabled) {}
+    GetXThinMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         if (!xthinEnabled) {
             LOCK(cs_main);
@@ -4993,11 +5022,15 @@ class XThinBlockMessage : public NetworkMessage {
 public:
     ~XThinBlockMessage() {}
 
-    XThinBlockMessage(CNode * const pFrom,
-                      const bool x_thin_enabled) :
-            NetworkMessage(pFrom, x_thin_enabled) {}
+    XThinBlockMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         if (!xthinEnabled) {
             LOCK(cs_main);
@@ -5042,11 +5075,15 @@ class XBlockTxMessage : public NetworkMessage {
 public:
     ~XBlockTxMessage() {}
 
-    XBlockTxMessage(CNode * const pFrom,
-                    const bool x_thin_enabled) :
-            NetworkMessage(pFrom, x_thin_enabled) {}
+    XBlockTxMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         if (!xthinEnabled) {
             LOCK(cs_main);
@@ -5125,9 +5162,15 @@ class GetXBlockTxMessage : public NetworkMessage {
 public:
     ~GetXBlockTxMessage() {}
 
-    GetXBlockTxMessage(CNode * const pFrom, const bool x_thin_enabled) : NetworkMessage(pFrom, x_thin_enabled) {}
+    GetXBlockTxMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         if (!xthinEnabled) {
             LOCK(cs_main);
@@ -5215,9 +5258,15 @@ class BlockMessage : public NetworkMessage {
 public:
     ~BlockMessage() {}
 
-    BlockMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+    BlockMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand) {
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing) {
         CBlock block;
         try {
             vRecv >> block;
@@ -5248,9 +5297,15 @@ class GetAddrMessage : public NetworkMessage {
 public:
     ~GetAddrMessage() {}
 
-    GetAddrMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+    GetAddrMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         // This asymmetric behavior for inbound and outbound connections was introduced
         // to prevent a fingerprinting attack: an attacker can send specific fake addresses
@@ -5282,9 +5337,15 @@ class MemPoolMessage : public NetworkMessage {
 public:
     ~MemPoolMessage() {}
 
-    MemPoolMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+    MemPoolMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         if (CNode::OutboundTargetReached(false) && !pfrom->fWhitelisted)
         {
@@ -5322,9 +5383,15 @@ class PingMessage : public NetworkMessage {
 public:
     ~PingMessage() {}
 
-    PingMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+    PingMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         if (pfrom->nVersion > BIP0031_VERSION)
         {
@@ -5351,9 +5418,15 @@ class PongMessage : public NetworkMessage {
 public:
     ~PongMessage() {}
 
-    PongMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+    PongMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         int64_t pingUsecEnd = nTimeReceived;
         uint64_t nonce = 0;
@@ -5416,9 +5489,15 @@ class FilterLoadMessage : public NetworkMessage {
 public:
     ~FilterLoadMessage() {}
 
-    FilterLoadMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+    FilterLoadMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         if (!GetBoolArg("-peerbloomfilters", true)) {
             LOCK(cs_main);
@@ -5450,9 +5529,15 @@ class FilterAddMessage : public NetworkMessage {
 public:
     ~FilterAddMessage() {}
 
-    FilterAddMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+    FilterAddMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         if (!GetBoolArg("-peerbloomfilters", true)) {
             LOCK(cs_main);
@@ -5483,9 +5568,15 @@ class FilterClearMessage : public NetworkMessage {
 public:
     ~FilterClearMessage() {}
 
-    FilterClearMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+    FilterClearMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         if (!GetBoolArg("-peerbloomfilters", true)) {
             LOCK(cs_main);
@@ -5504,9 +5595,15 @@ class RejectMessage : public NetworkMessage {
 public:
     ~RejectMessage() {}
 
-    RejectMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+    RejectMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         if (fDebug) {
             try {
@@ -5536,9 +5633,15 @@ class ExpeditedRequestMessage : public NetworkMessage {
 public:
     ~ExpeditedRequestMessage() {}
 
-    ExpeditedRequestMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+    ExpeditedRequestMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         HandleExpeditedRequest(vRecv, pfrom);
         return true;
@@ -5549,9 +5652,15 @@ class ExpeditedBlockMessage : public NetworkMessage {
 public:
     ~ExpeditedBlockMessage() {}
 
-    ExpeditedBlockMessage(CNode * const pFrom) : NetworkMessage(pFrom) {}
+    ExpeditedBlockMessage() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         HandleExpeditedBlock(vRecv, pfrom);
         return true;
@@ -5562,9 +5671,15 @@ class Version2Message : public NetworkMessage {
 public:
     ~Version2Message() {}
 
-    Version2Message(CNode * const pFrom) : NetworkMessage(pFrom) {}
+    Version2Message() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         // Each connection can only send one version message
         if (pfrom->addrFromPort != 0) {
@@ -5585,9 +5700,15 @@ class VersionAck2Message : public NetworkMessage {
 public:
     ~VersionAck2Message() {}
 
-    VersionAck2Message(CNode * const pFrom) : NetworkMessage(pFrom) {}
+    VersionAck2Message() : NetworkMessage() {}
 
-    bool handle(CDataStream &vRecv, int64_t nTimeReceived,  std::string &strCommand)
+    bool handle(CNode * const pfrom,
+                CDataStream &vRecv,
+                int64_t nTimeReceived,
+                std::string &strCommand,
+                const CChainParams &chainparams,
+                const bool xthinEnabled,
+                const bool fReindexing)
     {
         CheckAndRequestExpeditedBlocks(pfrom);
         return true;
@@ -5610,78 +5731,78 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
 
     NetworkMessage *networkMessage = nullptr;
     if (strCommand == NetMsgType::VERSION) {
-        networkMessage = new VersionMessage(pfrom);
+        networkMessage = new VersionMessage();
     } else if (pfrom->nVersion == 0) {
         // Must have a version message before anything else
         Misbehaving(pfrom->GetId(), 1);
         return false;
     } else if (strCommand == NetMsgType::VERACK) {
-        networkMessage = new VerAckMessage(pfrom, xthinEnabled);
+        networkMessage = new VerAckMessage();
     } else if (strCommand == NetMsgType::ADDR && (Application::uahfChainState() == Application::UAHFDisabled) == ((pfrom->nServices & NODE_BITCOIN_CASH) == 0)) {
-        networkMessage = new AddrMessage(pfrom);
+        networkMessage = new AddrMessage();
     } else if (strCommand == NetMsgType::SENDHEADERS) {
-        networkMessage = new SendHeadersMessage(pfrom, xthinEnabled);
+        networkMessage = new SendHeadersMessage();
     } else if (strCommand == NetMsgType::INV) {
-        networkMessage = new InvMessage(pfrom, chainparams, xthinEnabled, fReindex);
+        networkMessage = new InvMessage();
     } else if (strCommand == NetMsgType::GETDATA) {
-        networkMessage = new GetDataMessage(pfrom, chainparams);
+        networkMessage = new GetDataMessage();
     } else if (strCommand == NetMsgType::GETBLOCKS) {
-        networkMessage = new GetBlocksMessage(pfrom, chainparams);
+        networkMessage = new GetBlocksMessage();
     } else if (strCommand == NetMsgType::GETHEADERS) {
-        networkMessage = new GetHeadersMessage(pfrom);
+        networkMessage = new GetHeadersMessage();
     } else if (strCommand == NetMsgType::TX) {
-        networkMessage = new TxMessage(pfrom);
+        networkMessage = new TxMessage();
     } else if (strCommand == NetMsgType::HEADERS && !fImporting && !fReindex) {
         // Ignore headers received while importing
-        networkMessage = new HeadersMessage(pfrom, chainparams, xthinEnabled);
+        networkMessage = new HeadersMessage();
     } else if (strCommand == NetMsgType::GET_XTHIN && !fImporting && !fReindex) {
         // BUIP010 Xtreme Thinblocks: begin section
         // Ignore blocks received while importing
-        networkMessage = new GetXThinMessage(pfrom, chainparams, xthinEnabled);
+        networkMessage = new GetXThinMessage();
     } else if (strCommand == NetMsgType::XTHINBLOCK  && !fImporting && !fReindex) {
         // Ignore blocks received while importing
-        networkMessage = new XThinBlockMessage(pfrom, xthinEnabled);
+        networkMessage = new XThinBlockMessage();
     } else if (strCommand == NetMsgType::XBLOCKTX && !fImporting && !fReindex) {
         // handle Re-requested thinblock transactions
-        networkMessage = new XBlockTxMessage(pfrom, xthinEnabled);
+        networkMessage = new XBlockTxMessage();
     } else if (strCommand == NetMsgType::GET_XBLOCKTX && !fImporting && !fReindex) {
         // return Re-requested xthinblock transactions
-        networkMessage = new GetXBlockTxMessage(pfrom, xthinEnabled);
+        networkMessage = new GetXBlockTxMessage();
     } else if (strCommand == NetMsgType::BLOCK && !fImporting && !fReindex) {
         // Ignore blocks received while importing
-        networkMessage = new BlockMessage(pfrom);
+        networkMessage = new BlockMessage();
         // BUIP010 Xtreme Thinblocks: end section
     } else if (strCommand == NetMsgType::GETADDR) {
-        networkMessage = new GetAddrMessage(pfrom);
+        networkMessage = new GetAddrMessage();
     } else if (strCommand == NetMsgType::MEMPOOL) {
-        networkMessage = new MemPoolMessage(pfrom);
+        networkMessage = new MemPoolMessage();
     } else if (strCommand == NetMsgType::PING) {
-        networkMessage = new PingMessage(pfrom);
+        networkMessage = new PingMessage();
     } else if (strCommand == NetMsgType::PONG) {
-        networkMessage = new PongMessage(pfrom);
+        networkMessage = new PongMessage();
     } else if (strCommand == NetMsgType::FILTERLOAD) {
-        networkMessage = new FilterLoadMessage(pfrom);
+        networkMessage = new FilterLoadMessage();
     } else if (strCommand == NetMsgType::FILTERADD) {
-        networkMessage = new FilterAddMessage(pfrom);
+        networkMessage = new FilterAddMessage();
     } else if (strCommand == NetMsgType::FILTERCLEAR) {
-        networkMessage = new FilterClearMessage(pfrom);
+        networkMessage = new FilterClearMessage();
     } else if (strCommand == NetMsgType::REJECT) {
-        networkMessage = new RejectMessage(pfrom);
+        networkMessage = new RejectMessage();
     } else if (strCommand == NetMsgType::XPEDITEDREQUEST) {
-        networkMessage = new ExpeditedRequestMessage(pfrom);
+        networkMessage = new ExpeditedRequestMessage();
     } else if (strCommand == NetMsgType::XPEDITEDBLK) {
-        networkMessage = new ExpeditedBlockMessage(pfrom);
+        networkMessage = new ExpeditedBlockMessage();
     } else if (strCommand == NetMsgType::VERSION2) {
-        networkMessage = new Version2Message(pfrom);
+        networkMessage = new Version2Message();
     } else if (strCommand == NetMsgType::VERACK2) {
-        networkMessage = new VersionAck2Message(pfrom);
+        networkMessage = new VersionAck2Message();
     } else {
         // Ignore unknown commands for extensibility
         logDebug(Log::Net) << "Unknown command" << SanitizeString(strCommand) << "from peer:" << pfrom->id;
     }
 
     // FIX-ME: Perhaps a try/catch here according to Ticket 224 description by @zander
-    return networkMessage->handle(vRecv, nTimeReceived, strCommand);
+    return networkMessage->handle(pfrom, vRecv, nTimeReceived, strCommand, chainparams, xthinEnabled, fReindex);
 }
 
 // requires LOCK(cs_vRecvMsg)
