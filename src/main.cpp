@@ -4374,46 +4374,46 @@ public:
         int64_t nNow = GetAdjustedTime();
         int64_t nSince = nNow - 10 * 60;
         BOOST_FOREACH(CAddress &addr, vAddr) {
-                        boost::this_thread::interruption_point();
+            boost::this_thread::interruption_point();
 
-                        if (addr.nTime <= 100000000 || addr.nTime > nNow + 10 * 60)
-                            addr.nTime = nNow - 5 * 24 * 60 * 60;
-                        pfrom->AddAddressKnown(addr);
-                        bool fReachable = IsReachable(addr);
-                        if (addr.nTime > nSince && !pfrom->fGetAddr && vAddr.size() <= 10 && addr.IsRoutable()) {
-                            // Relay to a limited number of other nodes
-                            {
-                                LOCK(cs_vNodes);
-                                // Use deterministic randomness to send to the same nodes for 24 hours
-                                // at a time so the addrKnowns of the chosen nodes prevent repeats
-                                static uint256 hashSalt;
-                                if (hashSalt.IsNull())
-                                    hashSalt = GetRandHash();
-                                uint64_t hashAddr = addr.GetHash();
-                                uint256 hashRand = ArithToUint256(UintToArith256(hashSalt) ^ (hashAddr << 32) ^
-                                                                  ((GetTime() + hashAddr) / (24 * 60 * 60)));
-                                hashRand = Hash(BEGIN(hashRand), END(hashRand));
-                                std::multimap<uint256, CNode *> mapMix;
-                                BOOST_FOREACH(CNode *pnode, vNodes) {
-                                                if (pnode->nVersion < CADDR_TIME_VERSION)
-                                                    continue;
-                                                unsigned int nPointer;
-                                                memcpy(&nPointer, &pnode, sizeof(nPointer));
-                                                uint256 hashKey = ArithToUint256(UintToArith256(hashRand) ^ nPointer);
-                                                hashKey = Hash(BEGIN(hashKey), END(hashKey));
-                                                mapMix.insert(std::make_pair(hashKey, pnode));
-                                            }
-                                int nRelayNodes = fReachable ? 2
-                                                             : 1; // limited relaying of addresses outside our network(s)
-                                for (std::multimap<uint256, CNode *>::iterator mi = mapMix.begin();
-                                     mi != mapMix.end() && nRelayNodes-- > 0; ++mi)
-                                    ((*mi).second)->PushAddress(addr);
-                            }
-                        }
-                        // Do not store addresses outside our network
-                        if (fReachable)
-                            vAddrOk.push_back(addr);
-                    }
+            if (addr.nTime <= 100000000 || addr.nTime > nNow + 10 * 60)
+                addr.nTime = nNow - 5 * 24 * 60 * 60;
+            pfrom->AddAddressKnown(addr);
+            bool fReachable = IsReachable(addr);
+            if (addr.nTime > nSince && !pfrom->fGetAddr && vAddr.size() <= 10 && addr.IsRoutable()) {
+                // Relay to a limited number of other nodes
+                {
+                    LOCK(cs_vNodes);
+                    // Use deterministic randomness to send to the same nodes for 24 hours
+                    // at a time so the addrKnowns of the chosen nodes prevent repeats
+                    static uint256 hashSalt;
+                    if (hashSalt.IsNull())
+                        hashSalt = GetRandHash();
+                    uint64_t hashAddr = addr.GetHash();
+                    uint256 hashRand = ArithToUint256(UintToArith256(hashSalt) ^ (hashAddr << 32) ^
+                                                      ((GetTime() + hashAddr) / (24 * 60 * 60)));
+                    hashRand = Hash(BEGIN(hashRand), END(hashRand));
+                    std::multimap<uint256, CNode *> mapMix;
+                    BOOST_FOREACH(CNode *pnode, vNodes) {
+                                    if (pnode->nVersion < CADDR_TIME_VERSION)
+                                        continue;
+                                    unsigned int nPointer;
+                                    memcpy(&nPointer, &pnode, sizeof(nPointer));
+                                    uint256 hashKey = ArithToUint256(UintToArith256(hashRand) ^ nPointer);
+                                    hashKey = Hash(BEGIN(hashKey), END(hashKey));
+                                    mapMix.insert(std::make_pair(hashKey, pnode));
+                                }
+                    int nRelayNodes = fReachable ? 2
+                                                 : 1; // limited relaying of addresses outside our network(s)
+                    for (std::multimap<uint256, CNode *>::iterator mi = mapMix.begin();
+                         mi != mapMix.end() && nRelayNodes-- > 0; ++mi)
+                        ((*mi).second)->PushAddress(addr);
+                }
+            }
+            // Do not store addresses outside our network
+            if (fReachable)
+                vAddrOk.push_back(addr);
+        }
         addrman.Add(vAddrOk, pfrom->addr, 2 * 60 * 60);
         if (vAddr.size() < 1000)
             pfrom->fGetAddr = false;
@@ -4876,22 +4876,22 @@ public:
 
         CBlockIndex *pindexLast = NULL;
         BOOST_FOREACH(const CBlockHeader& header, headers) {
-                        CValidationState state;
-                        if (pindexLast != NULL && header.hashPrevBlock != pindexLast->GetBlockHash()) {
-                            Misbehaving(pfrom->GetId(), 20);
-                            logWarning(Log::Net) << "p2p HEADERS command received non-continues headers sequence from" << pfrom->GetId();
-                            return false;
-                        }
-                        if (!AcceptBlockHeader(header, state, chainparams, &pindexLast)) {
-                            int nDoS;
-                            if (state.IsInvalid(nDoS)) {
-                                if (nDoS > 0)
-                                    Misbehaving(pfrom->GetId(), nDoS);
-                                logWarning(Log::Net) << "p2p HEADERS command received invalid header from" << pfrom->GetId();
-                                return false;
-                            }
-                        }
-                    }
+            CValidationState state;
+            if (pindexLast != NULL && header.hashPrevBlock != pindexLast->GetBlockHash()) {
+                Misbehaving(pfrom->GetId(), 20);
+                logWarning(Log::Net) << "p2p HEADERS command received non-continues headers sequence from" << pfrom->GetId();
+                return false;
+            }
+            if (!AcceptBlockHeader(header, state, chainparams, &pindexLast)) {
+                int nDoS;
+                if (state.IsInvalid(nDoS)) {
+                    if (nDoS > 0)
+                        Misbehaving(pfrom->GetId(), nDoS);
+                    logWarning(Log::Net) << "p2p HEADERS command received invalid header from" << pfrom->GetId();
+                    return false;
+                }
+            }
+        }
 
         if (pindexLast)
             UpdateBlockAvailability(pfrom->GetId(), pindexLast->GetBlockHash());
@@ -5609,130 +5609,79 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
     const bool xthinEnabled = IsThinBlocksEnabled();
 
     NetworkMessage *networkMessage = nullptr;
-    if (strCommand == NetMsgType::VERSION)
-    {
+    if (strCommand == NetMsgType::VERSION) {
         networkMessage = new VersionMessage(pfrom);
-    }
-    else if (pfrom->nVersion == 0)
-    {
+    } else if (pfrom->nVersion == 0) {
         // Must have a version message before anything else
         Misbehaving(pfrom->GetId(), 1);
         return false;
-    }
-    else if (strCommand == NetMsgType::VERACK)
-    {
+    } else if (strCommand == NetMsgType::VERACK) {
         networkMessage = new VerAckMessage(pfrom, xthinEnabled);
-    }
-    else if (strCommand == NetMsgType::ADDR && (Application::uahfChainState() == Application::UAHFDisabled) == ((pfrom->nServices & NODE_BITCOIN_CASH) == 0))
-    {
+    } else if (strCommand == NetMsgType::ADDR && (Application::uahfChainState() == Application::UAHFDisabled) == ((pfrom->nServices & NODE_BITCOIN_CASH) == 0)) {
         networkMessage = new AddrMessage(pfrom);
-    }
-    else if (strCommand == NetMsgType::SENDHEADERS)
-    {
+    } else if (strCommand == NetMsgType::SENDHEADERS) {
         networkMessage = new SendHeadersMessage(pfrom, xthinEnabled);
-    }
-    else if (strCommand == NetMsgType::INV)
-    {
+    } else if (strCommand == NetMsgType::INV) {
         networkMessage = new InvMessage(pfrom, chainparams, xthinEnabled, fReindex);
-    }
-    else if (strCommand == NetMsgType::GETDATA)
-    {
+    } else if (strCommand == NetMsgType::GETDATA) {
         networkMessage = new GetDataMessage(pfrom, chainparams);
-    }
-    else if (strCommand == NetMsgType::GETBLOCKS)
-    {
+    } else if (strCommand == NetMsgType::GETBLOCKS) {
         networkMessage = new GetBlocksMessage(pfrom, chainparams);
-    }
-    else if (strCommand == NetMsgType::GETHEADERS)
-    {
+    } else if (strCommand == NetMsgType::GETHEADERS) {
         networkMessage = new GetHeadersMessage(pfrom);
-    }
-    else if (strCommand == NetMsgType::TX)
-    {
+    } else if (strCommand == NetMsgType::TX) {
         networkMessage = new TxMessage(pfrom);
-    }
-    else if (strCommand == NetMsgType::HEADERS && !fImporting && !fReindex) // Ignore headers received while importing
-    {
+    } else if (strCommand == NetMsgType::HEADERS && !fImporting && !fReindex) {
+        // Ignore headers received while importing
         networkMessage = new HeadersMessage(pfrom, chainparams, xthinEnabled);
-    }
-    // BUIP010 Xtreme Thinblocks: begin section
-    else if (strCommand == NetMsgType::GET_XTHIN && !fImporting && !fReindex) // Ignore blocks received while importing
-    {
+    } else if (strCommand == NetMsgType::GET_XTHIN && !fImporting && !fReindex) {
+        // BUIP010 Xtreme Thinblocks: begin section
+        // Ignore blocks received while importing
         networkMessage = new GetXThinMessage(pfrom, chainparams, xthinEnabled);
-    }
-    else if (strCommand == NetMsgType::XTHINBLOCK  && !fImporting && !fReindex) // Ignore blocks received while importing
-    {
+    } else if (strCommand == NetMsgType::XTHINBLOCK  && !fImporting && !fReindex) {
+        // Ignore blocks received while importing
         networkMessage = new XThinBlockMessage(pfrom, xthinEnabled);
-    }
-    else if (strCommand == NetMsgType::XBLOCKTX && !fImporting && !fReindex) // handle Re-requested thinblock transactions
-    {
+    } else if (strCommand == NetMsgType::XBLOCKTX && !fImporting && !fReindex) {
+        // handle Re-requested thinblock transactions
         networkMessage = new XBlockTxMessage(pfrom, xthinEnabled);
-    }
-    else if (strCommand == NetMsgType::GET_XBLOCKTX && !fImporting && !fReindex) // return Re-requested xthinblock transactions
-    {
+    } else if (strCommand == NetMsgType::GET_XBLOCKTX && !fImporting && !fReindex) {
+        // return Re-requested xthinblock transactions
         networkMessage = new GetXBlockTxMessage(pfrom, xthinEnabled);
-    }
-    // BUIP010 Xtreme Thinblocks: end section
-    else if (strCommand == NetMsgType::BLOCK && !fImporting && !fReindex) // Ignore blocks received while importing
-    {
+    } else if (strCommand == NetMsgType::BLOCK && !fImporting && !fReindex) {
+        // Ignore blocks received while importing
         networkMessage = new BlockMessage(pfrom);
-    }
-    else if (strCommand == NetMsgType::GETADDR)
-    {
+        // BUIP010 Xtreme Thinblocks: end section
+    } else if (strCommand == NetMsgType::GETADDR) {
         networkMessage = new GetAddrMessage(pfrom);
-    }
-    else if (strCommand == NetMsgType::MEMPOOL)
-    {
+    } else if (strCommand == NetMsgType::MEMPOOL) {
         networkMessage = new MemPoolMessage(pfrom);
-    }
-    else if (strCommand == NetMsgType::PING)
-    {
+    } else if (strCommand == NetMsgType::PING) {
         networkMessage = new PingMessage(pfrom);
-    }
-    else if (strCommand == NetMsgType::PONG)
-    {
+    } else if (strCommand == NetMsgType::PONG) {
         networkMessage = new PongMessage(pfrom);
-    }
-    else if (strCommand == NetMsgType::FILTERLOAD)
-    {
+    } else if (strCommand == NetMsgType::FILTERLOAD) {
         networkMessage = new FilterLoadMessage(pfrom);
-    }
-    else if (strCommand == NetMsgType::FILTERADD)
-    {
+    } else if (strCommand == NetMsgType::FILTERADD) {
         networkMessage = new FilterAddMessage(pfrom);
-    }
-    else if (strCommand == NetMsgType::FILTERCLEAR)
-    {
+    } else if (strCommand == NetMsgType::FILTERCLEAR) {
         networkMessage = new FilterClearMessage(pfrom);
-    }
-    else if (strCommand == NetMsgType::REJECT)
-    {
+    } else if (strCommand == NetMsgType::REJECT) {
         networkMessage = new RejectMessage(pfrom);
-    }
-    else if (strCommand == NetMsgType::XPEDITEDREQUEST)
-    {
+    } else if (strCommand == NetMsgType::XPEDITEDREQUEST) {
         networkMessage = new ExpeditedRequestMessage(pfrom);
-    }
-    else if (strCommand == NetMsgType::XPEDITEDBLK)
-    {
+    } else if (strCommand == NetMsgType::XPEDITEDBLK) {
         networkMessage = new ExpeditedBlockMessage(pfrom);
-    }
-    else if (strCommand == NetMsgType::VERSION2)
-    {
+    } else if (strCommand == NetMsgType::VERSION2) {
         networkMessage = new Version2Message(pfrom);
-    }
-    else if (strCommand == NetMsgType::VERACK2)
-    {
+    } else if (strCommand == NetMsgType::VERACK2) {
         networkMessage = new VersionAck2Message(pfrom);
-    }
-    else
-    {
+    } else {
         // Ignore unknown commands for extensibility
         logDebug(Log::Net) << "Unknown command" << SanitizeString(strCommand) << "from peer:" << pfrom->id;
     }
 
     // FIX-ME: Perhaps a try/catch here according to Ticket 224 description by @zander
-    return networkMessage->handle(vRecv, nTimeReceived, strCommand);;
+    return networkMessage->handle(vRecv, nTimeReceived, strCommand);
 }
 
 // requires LOCK(cs_vRecvMsg)
