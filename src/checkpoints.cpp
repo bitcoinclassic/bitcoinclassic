@@ -7,10 +7,6 @@
 #include "chain.h"
 #include "chainparams.h"
 #include "main.h"
-#include "uint256.h"
-#include "BlocksDB.h"
-
-#include <boost/foreach.hpp>
 
 namespace Checkpoints {
 
