@@ -189,7 +189,34 @@ BITCOIN_CORE_H = \
   zmq/zmqpublishnotifier.h \
   blockchain/Transaction.h \
   blockchain/Block.h \
-  blockchain/UndoBlock.h
+  blockchain/UndoBlock.h \
+  messages/AddrMessage.h \
+  messages/BlockMessage.h \
+  messages/ExpeditedBlockMessage.h \
+  messages/ExpeditedRequestMessage.h \
+  messages/FilterAddMessage.h \
+  messages/FilterClearMessage.h \
+  messages/FilterLoadMessage.h \
+  messages/GetAddrMessage.h \
+  messages/GetBlocksMessage.h \
+  messages/GetDataMessage.h \
+  messages/GetHeadersMessage.h \
+  messages/GetXBlockTxMessage.h \
+  messages/GetXThinMessage.h \
+  messages/HeadersMessage.h \
+  messages/InvMessage.h \
+  messages/MemPoolMessage.h \
+  messages/messages.h \
+  messages/NetworkMessage.h \
+  messages/PingMessage.h \
+  messages/PongMessage.h \
+  messages/RejectMessage.h \
+  messages/SendHeadersMessage.h \
+  messages/TxMessage.h \
+  messages/VerAckMessage.h \
+  messages/VersionMessage.h \
+  messages/XBlockTxMessage.h \
+  messages/XThinBlockMessage.h
 
 
 obj/build.h: FORCE
@@ -240,6 +267,31 @@ libbitcoin_server_a_SOURCES = \
   txmempool.cpp \
   validationinterface.cpp \
   versionbits.cpp \
+  messages/AddrMessage.cpp \
+  messages/BlockMessage.cpp \
+  messages/ExpeditedBlockMessage.cpp \
+  messages/ExpeditedRequestMessage.cpp \
+  messages/FilterAddMessage.cpp \
+  messages/FilterClearMessage.cpp \
+  messages/FilterLoadMessage.cpp \
+  messages/GetAddrMessage.cpp \
+  messages/GetBlocksMessage.cpp \
+  messages/GetDataMessage.cpp \
+  messages/GetHeadersMessage.cpp \
+  messages/GetXBlockTxMessage.cpp \
+  messages/GetXThinMessage.cpp \
+  messages/HeadersMessage.cpp \
+  messages/InvMessage.cpp \
+  messages/MemPoolMessage.cpp \
+  messages/PingMessage.cpp \
+  messages/PongMessage.cpp \
+  messages/RejectMessage.cpp \
+  messages/SendHeadersMessage.cpp \
+  messages/TxMessage.cpp \
+  messages/VerAckMessage.cpp \
+  messages/VersionMessage.cpp \
+  messages/XBlockTxMessage.cpp \
+  messages/XThinBlockMessage.cpp \
   $(BITCOIN_CORE_H)
 
 if ENABLE_ZMQ
