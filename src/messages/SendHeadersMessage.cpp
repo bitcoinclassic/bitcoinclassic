@@ -15,10 +15,7 @@ namespace Network {
     {
         LOCK(cs_main);
         // BUIP010 Xtreme Thinblocks: We only do inv/getdata for xthinblocks and so we must have headersfirst turned off
-        if (xthinEnabled)
-            State(pfrom->GetId())->fPreferHeaders = false;
-        else
-            State(pfrom->GetId())->fPreferHeaders = true;
+        State(pfrom->GetId())->fPreferHeaders = !xthinEnabled;
         return true;
     }
 }
