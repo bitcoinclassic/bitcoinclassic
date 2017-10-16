@@ -723,4 +723,6 @@ std::set<CBlockIndex*> setDirtyBlockIndex;
 /** Number of peers from which we're downloading blocks. */
 int nPeersWithValidatedDownloads = 0;
 
+
+
 #endif // BITCOIN_MAIN_H

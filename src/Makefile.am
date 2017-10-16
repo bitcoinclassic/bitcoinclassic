@@ -283,6 +283,7 @@ libbitcoin_server_a_SOURCES = \
   messages/HeadersMessage.cpp \
   messages/InvMessage.cpp \
   messages/MemPoolMessage.cpp \
+  messages/NetworkMessage.cpp \
   messages/PingMessage.cpp \
   messages/PongMessage.cpp \
   messages/RejectMessage.cpp \
