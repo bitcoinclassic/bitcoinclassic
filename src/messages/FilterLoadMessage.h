@@ -27,8 +27,6 @@
 namespace Network {
     class FilterLoadMessage : public NetworkMessage {
     public:
-        ~FilterLoadMessage() {}
-
         FilterLoadMessage() : NetworkMessage() {}
 
         bool handle(CNode *const pfrom,

@@ -27,8 +27,6 @@
 namespace Network {
     class GetHeadersMessage : public NetworkMessage {
     public:
-        ~GetHeadersMessage() {}
-
         GetHeadersMessage() : NetworkMessage() {}
 
         bool handle(CNode *const pfrom,

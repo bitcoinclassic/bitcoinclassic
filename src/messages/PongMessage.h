@@ -27,8 +27,6 @@
 namespace Network {
     class PongMessage : public NetworkMessage {
     public:
-        ~PongMessage() {}
-
         PongMessage() : NetworkMessage() {}
 
         bool handle(CNode *const pfrom,

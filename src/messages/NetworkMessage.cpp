@@ -22,30 +22,87 @@
 #include "NetworkMessage.h"
 
 namespace Network {
-    // Used in InvMesssage, TxMessage and XThinBlockMessage
-    bool AlreadyHave(const CInv &inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main) {
-    switch (inv.type) {
-        case MSG_TX: {
-            assert(recentRejects);
-            if (chainActive.Tip()->GetBlockHash() != hashRecentRejectsChainTip) {
-                // If the chain tip has changed previously rejected transactions
-                // might be now valid, e.g. due to a nLockTime'd tx becoming valid,
-                // or a double-spend. Reset the rejects filter and give those
-                // txs a second chance.
-                hashRecentRejectsChainTip = chainActive.Tip()->GetBlockHash();
-                recentRejects->reset();
+
+    // Used in main.cpp::AcceptBlock, HeadersMessage
+    bool AcceptBlockHeader(const CBlockHeader &block,
+                           CValidationState &state,
+                           const CChainParams &chainparams,
+                           CBlockIndex **ppindex = NULL) {
+        AssertLockHeld(cs_main);
+        // Check for duplicate
+        uint256 hash = block.GetHash();
+        auto miSelf = Blocks::indexMap.find(hash);
+        CBlockIndex *pindex = NULL;
+        if (hash != chainparams.GetConsensus().hashGenesisBlock) {
+
+            if (miSelf != Blocks::indexMap.end()) {
+                // Block header is already known.
+                pindex = miSelf->second;
+                if (ppindex)
+                    *ppindex = pindex;
+                if (pindex->nStatus & BLOCK_FAILED_MASK)
+                    return state.Invalid(error("%s: block is marked invalid", __func__), 0, "duplicate");
+                return true;
             }
 
-            return recentRejects->contains(inv.hash) ||
-                   mempool.exists(inv.hash) ||
-                   CTxOrphanCache::contains(inv.hash) ||
-                   pcoinsTip->HaveCoins(inv.hash);
+            if (!CheckBlockHeader(block, state))
+                return false;
+
+            // Get prev block index
+            CBlockIndex *pindexPrev = NULL;
+            auto mi = Blocks::indexMap.find(block.hashPrevBlock);
+            if (mi == Blocks::indexMap.end())
+                return state.DoS(10, error("%s: prev block not found", __func__), 0, "bad-prevblk");
+            pindexPrev = (*mi).second;
+            if (pindexPrev->nStatus & BLOCK_FAILED_MASK)
+                return state.DoS(100, error("%s: prev block invalid", __func__), REJECT_INVALID, "bad-prevblk");
+
+            assert(pindexPrev);
+            if (fCheckpointsEnabled && !CheckIndexAgainstCheckpoint(pindexPrev, state, chainparams, hash))
+                return error("%s: CheckIndexAgainstCheckpoint(): %s", __func__, state.GetRejectReason().c_str());
+
+            if (!ContextualCheckBlockHeader(block, state, pindexPrev))
+                return false;
         }
-        case MSG_BLOCK:
-            return Blocks::indexMap.count(inv.hash);
+        if (pindex == NULL)
+            pindex = AddToBlockIndex(block);
+
+        if (ppindex)
+            *ppindex = pindex;
+
+        return true;
     }
-    // Don't know what it is, just say we already got one
-    return true;
+
+    // Used in InvMesssage, TxMessage and XThinBlockMessage
+    bool AlreadyHave(const CInv &inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main) {
+        switch (inv.type) {
+            case MSG_TX: {
+                assert(recentRejects);
+                if (chainActive.Tip()->GetBlockHash() != hashRecentRejectsChainTip) {
+                    // If the chain tip has changed previously rejected transactions
+                    // might be now valid, e.g. due to a nLockTime'd tx becoming valid,
+                    // or a double-spend. Reset the rejects filter and give those
+                    // txs a second chance.
+                    hashRecentRejectsChainTip = chainActive.Tip()->GetBlockHash();
+                    recentRejects->reset();
+                }
+
+                return recentRejects->contains(inv.hash) ||
+                       mempool.exists(inv.hash) ||
+                       CTxOrphanCache::contains(inv.hash) ||
+                       pcoinsTip->HaveCoins(inv.hash);
+            }
+            case MSG_BLOCK:
+                return Blocks::indexMap.count(inv.hash);
+        }
+        // Don't know what it is, just say we already got one
+        return true;
+    }
+
+    // Requires cs_main
+    // Used by HeadersMessage and InvMessage
+    bool CanDirectFetch(const Consensus::Params &consensusParams) {
+        return chainActive.Tip()->GetBlockTime() > GetAdjustedTime() - consensusParams.nPowTargetSpacing * 20;
     }
 
     // Used in main.cpp (FindNextBlocksToDownload, SendMessages) and below on UpdateBlockAvailability
@@ -226,54 +283,24 @@ namespace Network {
         }
     }
 
-    // Used in main.cpp::AcceptBlock, HeadersMessage
-    bool AcceptBlockHeader(const CBlockHeader &block,
-                           CValidationState &state,
-                           const CChainParams &chainparams,
-                           CBlockIndex **ppindex = NULL) {
-        AssertLockHeld(cs_main);
-        // Check for duplicate
-        uint256 hash = block.GetHash();
-        auto miSelf = Blocks::indexMap.find(hash);
-        CBlockIndex *pindex = NULL;
-        if (hash != chainparams.GetConsensus().hashGenesisBlock) {
+    /** Update tracking information about which blocks a peer is assumed to have. */
+    // Used in HeadersMessage, InvMessage
+    void UpdateBlockAvailability(NodeId nodeid, const uint256 &hash) {
+        CNodeState *state = State(nodeid);
+        assert(state != NULL);
 
-            if (miSelf != Blocks::indexMap.end()) {
-                // Block header is already known.
-                pindex = miSelf->second;
-                if (ppindex)
-                    *ppindex = pindex;
-                if (pindex->nStatus & BLOCK_FAILED_MASK)
-                    return state.Invalid(error("%s: block is marked invalid", __func__), 0, "duplicate");
-                return true;
-            }
+        Network::ProcessBlockAvailability(nodeid);
 
-            if (!CheckBlockHeader(block, state))
-                return false;
-
-            // Get prev block index
-            CBlockIndex *pindexPrev = NULL;
-            auto mi = Blocks::indexMap.find(block.hashPrevBlock);
-            if (mi == Blocks::indexMap.end())
-                return state.DoS(10, error("%s: prev block not found", __func__), 0, "bad-prevblk");
-            pindexPrev = (*mi).second;
-            if (pindexPrev->nStatus & BLOCK_FAILED_MASK)
-                return state.DoS(100, error("%s: prev block invalid", __func__), REJECT_INVALID, "bad-prevblk");
-
-            assert(pindexPrev);
-            if (fCheckpointsEnabled && !CheckIndexAgainstCheckpoint(pindexPrev, state, chainparams, hash))
-                return error("%s: CheckIndexAgainstCheckpoint(): %s", __func__, state.GetRejectReason().c_str());
-
-            if (!ContextualCheckBlockHeader(block, state, pindexPrev))
-                return false;
+        auto it = Blocks::indexMap.find(hash);
+        if (it != Blocks::indexMap.end() && it->second->nChainWork > 0) {
+            // An actually better block was announced.
+            if (state->pindexBestKnownBlock == NULL ||
+                it->second->nChainWork >= state->pindexBestKnownBlock->nChainWork)
+                state->pindexBestKnownBlock = it->second;
+        } else {
+            // An unknown block was announced; just assume that the latest one is the best one.
+            state->hashLastUnknownBlock = hash;
         }
-        if (pindex == NULL)
-            pindex = AddToBlockIndex(block);
-
-        if (ppindex)
-            *ppindex = pindex;
-
-        return true;
     }
 }
 

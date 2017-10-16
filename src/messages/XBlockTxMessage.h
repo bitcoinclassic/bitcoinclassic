@@ -27,8 +27,6 @@
 namespace Network {
     class XBlockTxMessage : public NetworkMessage {
     public:
-        ~XBlockTxMessage() {}
-
         XBlockTxMessage() : NetworkMessage() {}
 
         bool handle(CNode *const pfrom,

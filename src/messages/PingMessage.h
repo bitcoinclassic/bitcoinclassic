@@ -27,8 +27,6 @@
 namespace Network {
     class PingMessage : public NetworkMessage {
     public:
-        ~PingMessage() {}
-
         PingMessage() : NetworkMessage() {}
 
         bool handle(CNode *const pfrom,

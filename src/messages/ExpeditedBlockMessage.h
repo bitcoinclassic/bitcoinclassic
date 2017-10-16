@@ -27,8 +27,6 @@
 namespace Network {
     class ExpeditedBlockMessage : public NetworkMessage {
     public:
-        ~ExpeditedBlockMessage() {}
-
         ExpeditedBlockMessage() : NetworkMessage() {}
 
         bool handle(CNode *const pfrom,

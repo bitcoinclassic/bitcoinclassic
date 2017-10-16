@@ -28,8 +28,6 @@ namespace Network {
 
     class VersionMessage : public NetworkMessage {
     public:
-        ~VersionMessage() {}
-
         VersionMessage() : NetworkMessage() {}
 
         bool handle(CNode *const pfrom,

@@ -57,12 +57,19 @@ namespace Network {
         friend class CAddrMan;
     };
 
-    bool AlreadyHave(const CInv &inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
-    void ProcessBlockAvailability(NodeId nodeid);
-    void ProcessGetData(CNode *pfrom, const Consensus::Params &consensusParams);
     bool AcceptBlockHeader(const CBlockHeader &block,
                            CValidationState &state,
                            const CChainParams &chainparams,
                            CBlockIndex **ppindex = NULL);
+
+    bool AlreadyHave(const CInv &inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
+
+    bool CanDirectFetch(const Consensus::Params &consensusParams);
+
+    void ProcessBlockAvailability(NodeId nodeid);
+
+    void ProcessGetData(CNode *pfrom, const Consensus::Params &consensusParams);
+
+    void UpdateBlockAvailability(NodeId nodeid, const uint256 &hash);
 }
 #endif //BITCOINCLASSIC_NETWORKMESSAGE_H

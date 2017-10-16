@@ -27,8 +27,6 @@
 namespace Network {
     class GetXThinMessage : public NetworkMessage {
     public:
-        ~GetXThinMessage() {}
-
         GetXThinMessage() : NetworkMessage() {}
 
         bool handle(CNode *const pfrom,

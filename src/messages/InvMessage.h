@@ -27,8 +27,6 @@
 namespace Network {
     class InvMessage : public NetworkMessage {
     public:
-        ~InvMessage() {}
-
         InvMessage() : NetworkMessage() {}
 
         bool handle(CNode *const pfrom,

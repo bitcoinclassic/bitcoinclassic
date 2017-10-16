@@ -28,8 +28,6 @@ namespace Network {
 
     class TxMessage : public NetworkMessage {
     public:
-        ~TxMessage() {}
-
         TxMessage() : NetworkMessage() {}
 
         bool handle(CNode *const pfrom,

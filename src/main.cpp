@@ -30,14 +30,12 @@
 #include "consensus/validation.h"
 #include "hash.h"
 #include "init.h"
-#include "merkleblock.h"
 #include "policy/policy.h"
 #include "script/sigcache.h"
 #include "thinblock.h"
 #include "txmempool.h"
 #include "txorphancache.h"
 #include "ui_interface.h"
-#include "undo.h"
 #include "utilmoneystr.h"
 #include "validationinterface.h"
 #include "messages/messages.h"
@@ -190,33 +188,6 @@ void MarkBlockAsInFlight(NodeId nodeid, const uint256& hash, const Consensus::Pa
         nPeersWithValidatedDownloads++;
     }
     mapBlocksInFlight[hash] = std::make_pair(nodeid, it);
-}
-
-/** Update tracking information about which blocks a peer is assumed to have. */
-// Used in HeadersMessage, InvMessage
-void UpdateBlockAvailability(NodeId nodeid, const uint256 &hash) {
-    CNodeState *state = State(nodeid);
-    assert(state != NULL);
-
-    Network::ProcessBlockAvailability(nodeid);
-
-    auto it = Blocks::indexMap.find(hash);
-    if (it != Blocks::indexMap.end() && it->second->nChainWork > 0) {
-        // An actually better block was announced.
-        if (state->pindexBestKnownBlock == NULL ||
-            it->second->nChainWork >= state->pindexBestKnownBlock->nChainWork)
-            state->pindexBestKnownBlock = it->second;
-    } else {
-        // An unknown block was announced; just assume that the latest one is the best one.
-        state->hashLastUnknownBlock = hash;
-    }
-}
-
-// Requires cs_main
-// Used by HeadersMessage and InvMessage
-bool CanDirectFetch(const Consensus::Params &consensusParams)
-{
-    return chainActive.Tip()->GetBlockTime() > GetAdjustedTime() - consensusParams.nPowTargetSpacing * 20;
 }
 
 // Requires cs_main
@@ -629,13 +600,6 @@ unsigned int GetP2SHSigOpCount(const CTransaction& tx, const CCoinsViewCache& in
     }
     return nSigOps;
 }
-
-
-
-
-
-
-
 
 bool CheckTransaction(const CTransaction& tx, CValidationState &state)
 {

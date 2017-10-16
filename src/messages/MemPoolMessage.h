@@ -28,8 +28,6 @@ namespace Network {
 
     class MemPoolMessage : public NetworkMessage {
     public:
-        ~MemPoolMessage() {}
-
         MemPoolMessage() : NetworkMessage() {}
 
         bool handle(CNode *const pfrom,

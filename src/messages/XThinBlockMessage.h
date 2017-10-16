@@ -27,8 +27,6 @@
 namespace Network {
     class XThinBlockMessage : public NetworkMessage {
     public:
-        ~XThinBlockMessage() {}
-
         XThinBlockMessage() : NetworkMessage() {}
 
         bool handle(CNode *const pfrom,

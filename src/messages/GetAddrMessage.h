@@ -28,8 +28,6 @@ namespace Network {
 
     class GetAddrMessage : public NetworkMessage {
     public:
-        ~GetAddrMessage() {}
-
         GetAddrMessage() : NetworkMessage() {}
 
         bool handle(CNode *const pfrom,

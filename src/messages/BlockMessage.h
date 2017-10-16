@@ -28,8 +28,6 @@ namespace Network {
 
     class BlockMessage : public NetworkMessage {
     public:
-        ~BlockMessage() {}
-
         BlockMessage() : NetworkMessage() {}
 
         bool handle(CNode *const pfrom,

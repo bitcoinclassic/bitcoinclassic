@@ -27,8 +27,6 @@
 namespace Network {
     class GetDataMessage : public NetworkMessage {
     public:
-        ~GetDataMessage() {}
-
         GetDataMessage() : NetworkMessage() {}
 
         bool handle(CNode *const pfrom,

@@ -27,8 +27,6 @@
 namespace Network {
     class GetBlocksMessage : public NetworkMessage {
     public:
-        ~GetBlocksMessage() {}
-
         GetBlocksMessage() : NetworkMessage() {}
 
         bool handle(CNode *const pfrom,

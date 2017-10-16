@@ -27,8 +27,6 @@
 namespace Network {
     class VerAckMessage : public NetworkMessage {
     public:
-        ~VerAckMessage() {}
-
         VerAckMessage() : NetworkMessage() {}
 
         bool handle(CNode *const pfrom,

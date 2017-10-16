@@ -27,8 +27,6 @@
 namespace Network {
     class RejectMessage : public NetworkMessage {
     public:
-        ~RejectMessage() {}
-
         RejectMessage() : NetworkMessage() {}
 
         bool handle(CNode *const pfrom,
