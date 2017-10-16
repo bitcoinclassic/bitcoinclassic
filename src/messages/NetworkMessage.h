@@ -66,6 +66,10 @@ namespace Network {
 
     bool CanDirectFetch(const Consensus::Params &consensusParams);
 
+    void MarkBlockAsInFlight(NodeId nodeid, const uint256& hash, const Consensus::Params& consensusParams, CBlockIndex *pindex = NULL);
+
+    bool MarkBlockAsReceived(const uint256& hash);
+
     void ProcessBlockAvailability(NodeId nodeid);
 
     void ProcessGetData(CNode *pfrom, const Consensus::Params &consensusParams);
