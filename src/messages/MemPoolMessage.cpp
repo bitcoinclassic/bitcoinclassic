@@ -27,9 +27,9 @@ namespace {
                                 int64_t nTimeReceived,
                                 std::string &strCommand,
                                 const bool xthinEnabled,
-                                const bool fReindexing) {
-        if (CNode::OutboundTargetReached(false) && !pfrom->fWhitelisted)
-        {
+                                const bool fReindexing)
+    {
+        if (CNode::OutboundTargetReached(false) && !pfrom->fWhitelisted) {
             LogPrint("net", "mempool request with bandwidth limit reached, disconnect peer=%d\n", pfrom->GetId());
             pfrom->fDisconnect = true;
             return true;
@@ -40,19 +40,19 @@ namespace {
         mempool.queryHashes(vtxid);
         std::vector<CInv> vInv;
         BOOST_FOREACH(uint256 &hash, vtxid) {
-                        CInv inv(MSG_TX, hash);
-                        if (pfrom->pfilter) {
-                            CTransaction tx;
-                            bool fInMemPool = mempool.lookup(hash, tx);
-                            if (!fInMemPool) continue; // another thread removed since queryHashes, maybe...
-                            if (!pfrom->pfilter->IsRelevantAndUpdate(tx)) continue;
-                        }
-                        vInv.push_back(inv);
-                        if (vInv.size() == MAX_INV_SZ) {
-                            pfrom->PushMessage(NetMsgType::INV, vInv);
-                            vInv.clear();
-                        }
-                    }
+            CInv inv(MSG_TX, hash);
+            if (pfrom->pfilter) {
+                CTransaction tx;
+                bool fInMemPool = mempool.lookup(hash, tx);
+                if (!fInMemPool) continue; // another thread removed since queryHashes, maybe...
+                if (!pfrom->pfilter->IsRelevantAndUpdate(tx)) continue;
+            }
+            vInv.push_back(inv);
+            if (vInv.size() == MAX_INV_SZ) {
+                pfrom->PushMessage(NetMsgType::INV, vInv);
+                vInv.clear();
+            }
+        }
         if (vInv.size() > 0)
             pfrom->PushMessage(NetMsgType::INV, vInv);
 

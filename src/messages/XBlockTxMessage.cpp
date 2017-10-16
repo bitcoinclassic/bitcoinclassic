@@ -54,8 +54,8 @@ namespace {
         // Create the mapMissingTx from all the supplied tx's in the xthinblock
         std::map<uint64_t, CTransaction> mapMissingTx;
         BOOST_FOREACH(CTransaction tx, thinBlockTx.vMissingTx) {
-                        mapMissingTx[tx.GetHash().GetCheapHash()] = tx;
-                    }
+            mapMissingTx[tx.GetHash().GetCheapHash()] = tx;
+        }
 
         int count = 0;
         for (size_t i = 0; i < pfrom->thinBlock.vtx.size(); ++i) {

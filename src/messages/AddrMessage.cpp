@@ -45,46 +45,46 @@ namespace {
         int64_t nNow = GetAdjustedTime();
         int64_t nSince = nNow - 10 * 60;
         BOOST_FOREACH(CAddress &addr, vAddr) {
-                        boost::this_thread::interruption_point();
+            boost::this_thread::interruption_point();
 
-                        if (addr.nTime <= 100000000 || addr.nTime > nNow + 10 * 60)
-                            addr.nTime = nNow - 5 * 24 * 60 * 60;
-                        pfrom->AddAddressKnown(addr);
-                        bool fReachable = IsReachable(addr);
-                        if (addr.nTime > nSince && !pfrom->fGetAddr && vAddr.size() <= 10 && addr.IsRoutable()) {
-                            // Relay to a limited number of other nodes
-                            {
-                                LOCK(cs_vNodes);
-                                // Use deterministic randomness to send to the same nodes for 24 hours
-                                // at a time so the addrKnowns of the chosen nodes prevent repeats
-                                static uint256 hashSalt;
-                                if (hashSalt.IsNull())
-                                    hashSalt = GetRandHash();
-                                uint64_t hashAddr = addr.GetHash();
-                                uint256 hashRand = ArithToUint256(UintToArith256(hashSalt) ^ (hashAddr << 32) ^
-                                                                  ((GetTime() + hashAddr) / (24 * 60 * 60)));
-                                hashRand = Hash(BEGIN(hashRand), END(hashRand));
-                                std::multimap<uint256, CNode *> mapMix;
-                                BOOST_FOREACH(CNode *pnode, vNodes) {
-                                                if (pnode->nVersion < CADDR_TIME_VERSION)
-                                                    continue;
-                                                unsigned int nPointer;
-                                                memcpy(&nPointer, &pnode, sizeof(nPointer));
-                                                uint256 hashKey = ArithToUint256(UintToArith256(hashRand) ^ nPointer);
-                                                hashKey = Hash(BEGIN(hashKey), END(hashKey));
-                                                mapMix.insert(std::make_pair(hashKey, pnode));
-                                            }
-                                int nRelayNodes = fReachable ? 2
-                                                             : 1; // limited relaying of addresses outside our network(s)
-                                for (std::multimap<uint256, CNode *>::iterator mi = mapMix.begin();
-                                     mi != mapMix.end() && nRelayNodes-- > 0; ++mi)
-                                    ((*mi).second)->PushAddress(addr);
-                            }
-                        }
-                        // Do not store addresses outside our network
-                        if (fReachable)
-                            vAddrOk.push_back(addr);
+            if (addr.nTime <= 100000000 || addr.nTime > nNow + 10 * 60)
+                addr.nTime = nNow - 5 * 24 * 60 * 60;
+            pfrom->AddAddressKnown(addr);
+            bool fReachable = IsReachable(addr);
+            if (addr.nTime > nSince && !pfrom->fGetAddr && vAddr.size() <= 10 && addr.IsRoutable()) {
+                // Relay to a limited number of other nodes
+                {
+                    LOCK(cs_vNodes);
+                    // Use deterministic randomness to send to the same nodes for 24 hours
+                    // at a time so the addrKnowns of the chosen nodes prevent repeats
+                    static uint256 hashSalt;
+                    if (hashSalt.IsNull())
+                        hashSalt = GetRandHash();
+                    uint64_t hashAddr = addr.GetHash();
+                    uint256 hashRand = ArithToUint256(UintToArith256(hashSalt) ^ (hashAddr << 32) ^
+                                                      ((GetTime() + hashAddr) / (24 * 60 * 60)));
+                    hashRand = Hash(BEGIN(hashRand), END(hashRand));
+                    std::multimap<uint256, CNode *> mapMix;
+                    BOOST_FOREACH(CNode *pnode, vNodes) {
+                        if (pnode->nVersion < CADDR_TIME_VERSION)
+                            continue;
+                        unsigned int nPointer;
+                        memcpy(&nPointer, &pnode, sizeof(nPointer));
+                        uint256 hashKey = ArithToUint256(UintToArith256(hashRand) ^ nPointer);
+                        hashKey = Hash(BEGIN(hashKey), END(hashKey));
+                        mapMix.insert(std::make_pair(hashKey, pnode));
                     }
+                    int nRelayNodes = fReachable ? 2
+                                                 : 1; // limited relaying of addresses outside our network(s)
+                    for (std::multimap<uint256, CNode *>::iterator mi = mapMix.begin();
+                         mi != mapMix.end() && nRelayNodes-- > 0; ++mi)
+                        ((*mi).second)->PushAddress(addr);
+                }
+            }
+            // Do not store addresses outside our network
+            if (fReachable)
+                vAddrOk.push_back(addr);
+        }
         addrman.Add(vAddrOk, pfrom->addr, 2 * 60 * 60);
         if (vAddr.size() < 1000)
             pfrom->fGetAddr = false;

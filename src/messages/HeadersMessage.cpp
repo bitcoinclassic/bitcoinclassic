@@ -52,25 +52,25 @@ namespace {
         const CChainParams chainparams = Params();
         CBlockIndex *pindexLast = NULL;
         BOOST_FOREACH(const CBlockHeader &header, headers) {
-                        CValidationState state;
-                        if (pindexLast != NULL && header.hashPrevBlock != pindexLast->GetBlockHash()) {
-                            Misbehaving(pfrom->GetId(), 20);
-                            logWarning(Log::Net)
-                                    << "p2p HEADERS command received non-continues headers sequence from"
-                                    << pfrom->GetId();
-                            return false;
-                        }
-                        if (!AcceptBlockHeader(header, state, chainparams, &pindexLast)) {
-                            int nDoS;
-                            if (state.IsInvalid(nDoS)) {
-                                if (nDoS > 0)
-                                    Misbehaving(pfrom->GetId(), nDoS);
-                                logWarning(Log::Net) << "p2p HEADERS command received invalid header from"
-                                                     << pfrom->GetId();
-                                return false;
-                            }
-                        }
-                    }
+            CValidationState state;
+            if (pindexLast != NULL && header.hashPrevBlock != pindexLast->GetBlockHash()) {
+                Misbehaving(pfrom->GetId(), 20);
+                logWarning(Log::Net)
+                    << "p2p HEADERS command received non-continues headers sequence from"
+                    << pfrom->GetId();
+                return false;
+            }
+            if (!AcceptBlockHeader(header, state, chainparams, &pindexLast)) {
+                int nDoS;
+                if (state.IsInvalid(nDoS)) {
+                    if (nDoS > 0)
+                        Misbehaving(pfrom->GetId(), nDoS);
+                    logWarning(Log::Net) << "p2p HEADERS command received invalid header from"
+                                         << pfrom->GetId();
+                    return false;
+                }
+            }
+        }
 
         if (pindexLast)
             UpdateBlockAvailability(pfrom->GetId(), pindexLast->GetBlockHash());
@@ -119,16 +119,16 @@ namespace {
                 std::vector<CInv> vGetData;
                 // Download as much as possible, from earliest to latest.
                 BOOST_REVERSE_FOREACH(CBlockIndex *pindex, vToFetch) {
-                                if (nodestate->nBlocksInFlight >= MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
-                                    // Can't download any more from this peer
-                                    break;
-                                }
-                                vGetData.push_back(CInv(MSG_BLOCK, pindex->GetBlockHash()));
-                                MarkBlockAsInFlight(pfrom->GetId(), pindex->GetBlockHash(),
-                                                    chainparams.GetConsensus(), pindex);
-                                logDebug(Log::Net) << "Requesting block" << pindex->GetBlockHash() << "from  peer:"
-                                                   << pfrom->id;
-                            }
+                    if (nodestate->nBlocksInFlight >= MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
+                        // Can't download any more from this peer
+                        break;
+                    }
+                    vGetData.push_back(CInv(MSG_BLOCK, pindex->GetBlockHash()));
+                    MarkBlockAsInFlight(pfrom->GetId(), pindex->GetBlockHash(),
+                                        chainparams.GetConsensus(), pindex);
+                    logDebug(Log::Net) << "Requesting block" << pindex->GetBlockHash() << "from  peer:"
+                                       << pfrom->id;
+                }
                 if (vGetData.size() > 1) {
                     logDebug(Log::Net) << "Downloading blocks toward" << pindexLast->GetBlockHash() << "height:"
                                        << pindexLast->nHeight;

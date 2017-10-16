@@ -194,8 +194,8 @@ namespace {
                                 // however we MUST always provide at least what the remote peer needs
                                 typedef std::pair<unsigned int, uint256> PairType;
                                 BOOST_FOREACH(PairType &pair, merkleBlock.vMatchedTxn)
-                                                pfrom->PushMessage(NetMsgType::TX,
-                                                                   block.vtx[pair.first]);
+                                    pfrom->PushMessage(NetMsgType::TX,
+                                                       block.vtx[pair.first]);
                                 sendFullBlock = false;
                             }
                         }
