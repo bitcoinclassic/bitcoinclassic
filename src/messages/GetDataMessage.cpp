@@ -21,14 +21,13 @@
 
 #include "GetDataMessage.h"
 
-namespace {
-    bool
-    GetDataMessage::handle(CNode *const pfrom,
-                           CDataStream &vRecv,
-                           int64_t nTimeReceived,
-                           std::string &strCommand,
-                           const bool xthinEnabled,
-                           const bool fReindexing)
+namespace Network {
+    bool GetDataMessage::handle(CNode *const pfrom,
+                                CDataStream &vRecv,
+                                int64_t nTimeReceived,
+                                std::string &strCommand,
+                                const bool xthinEnabled,
+                                const bool fReindexing)
     {
         std::vector<CInv> vInv;
         vRecv >> vInv;

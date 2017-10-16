@@ -21,7 +21,7 @@
 
 #include "InvMessage.h"
 
-namespace {
+namespace Network {
     bool InvMessage::handle(CNode *const pfrom,
                             CDataStream &vRecv,
                             int64_t nTimeReceived,

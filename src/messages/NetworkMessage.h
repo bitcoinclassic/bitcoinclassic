@@ -37,7 +37,7 @@
 
 static bool CheckIndexAgainstCheckpoint(const CBlockIndex* pindexPrev, CValidationState& state, const CChainParams& chainparams, const uint256& hash);
 
-namespace {
+namespace Network {
 
     CNodeState *State(NodeId pnode);
 

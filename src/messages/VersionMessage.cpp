@@ -21,7 +21,7 @@
 
 #include "VersionMessage.h"
 
-namespace {
+namespace Network {
     void UpdatePreferredDownload(CNode* node, CNodeState* state)
     {
         nPreferredDownload -= state->fPreferredDownload;

@@ -21,7 +21,7 @@
 
 #include "GetXBlockTxMessage.h"
 
-namespace {
+namespace Network {
     bool GetXBlockTxMessage::handle(CNode *const pfrom,
                                     CDataStream &vRecv,
                                     int64_t nTimeReceived,

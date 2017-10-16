@@ -21,7 +21,7 @@
 
 #include "HeadersMessage.h"
 
-namespace {
+namespace Network {
     bool HeadersMessage::handle(CNode *const pfrom,
                                 CDataStream &vRecv,
                                 int64_t nTimeReceived,

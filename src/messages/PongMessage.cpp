@@ -21,7 +21,7 @@
 
 #include "PongMessage.h"
 
-namespace {
+namespace Network {
     bool PongMessage::handle(CNode *const pfrom,
                              CDataStream &vRecv,
                              int64_t nTimeReceived,

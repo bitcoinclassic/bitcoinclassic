@@ -87,12 +87,6 @@ int nLastBlockFile = 0;
 /** Dirty block file entries. */
 std::set<int> setDirtyFileInfo;
 
-// Internal stuff
-namespace {
-
-
-} // anon namespace
-
 //////////////////////////////////////////////////////////////////////////////
 //
 // Registration of network node signals.
@@ -3736,73 +3730,73 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
 
     const bool xthinEnabled = IsThinBlocksEnabled();
 
-    NetworkMessage *networkMessage = nullptr;
+    Network::NetworkMessage *networkMessage = nullptr;
     if (strCommand == NetMsgType::VERSION) {
-        networkMessage = new VersionMessage();
+        networkMessage = new Network::VersionMessage();
     } else if (pfrom->nVersion == 0) {
         // Must have a version message before anything else
         Misbehaving(pfrom->GetId(), 1);
         return false;
     } else if (strCommand == NetMsgType::VERACK) {
-        networkMessage = new VerAckMessage();
+        networkMessage = new Network::VerAckMessage();
     } else if (strCommand == NetMsgType::ADDR && (Application::uahfChainState() == Application::UAHFDisabled) == ((pfrom->nServices & NODE_BITCOIN_CASH) == 0)) {
-        networkMessage = new AddrMessage();
+        networkMessage = new Network::AddrMessage();
     } else if (strCommand == NetMsgType::SENDHEADERS) {
-        networkMessage = new SendHeadersMessage();
+        networkMessage = new Network::SendHeadersMessage();
     } else if (strCommand == NetMsgType::INV) {
-        networkMessage = new InvMessage();
+        networkMessage = new Network::InvMessage();
     } else if (strCommand == NetMsgType::GETDATA) {
-        networkMessage = new GetDataMessage();
+        networkMessage = new Network::GetDataMessage();
     } else if (strCommand == NetMsgType::GETBLOCKS) {
-        networkMessage = new GetBlocksMessage();
+        networkMessage = new Network::GetBlocksMessage();
     } else if (strCommand == NetMsgType::GETHEADERS) {
-        networkMessage = new GetHeadersMessage();
+        networkMessage = new Network::GetHeadersMessage();
     } else if (strCommand == NetMsgType::TX) {
-        networkMessage = new TxMessage();
+        networkMessage = new Network::TxMessage();
     } else if (strCommand == NetMsgType::HEADERS && !fImporting && !fReindex) {
         // Ignore headers received while importing
-        networkMessage = new HeadersMessage();
+        networkMessage = new Network::HeadersMessage();
     } else if (strCommand == NetMsgType::GET_XTHIN && !fImporting && !fReindex) {
         // BUIP010 Xtreme Thinblocks: begin section
         // Ignore blocks received while importing
-        networkMessage = new GetXThinMessage();
+        networkMessage = new Network::GetXThinMessage();
     } else if (strCommand == NetMsgType::XTHINBLOCK  && !fImporting && !fReindex) {
         // Ignore blocks received while importing
-        networkMessage = new XThinBlockMessage();
+        networkMessage = new Network::XThinBlockMessage();
     } else if (strCommand == NetMsgType::XBLOCKTX && !fImporting && !fReindex) {
         // handle Re-requested thinblock transactions
-        networkMessage = new XBlockTxMessage();
+        networkMessage = new Network::XBlockTxMessage();
     } else if (strCommand == NetMsgType::GET_XBLOCKTX && !fImporting && !fReindex) {
         // return Re-requested xthinblock transactions
-        networkMessage = new GetXBlockTxMessage();
+        networkMessage = new Network::GetXBlockTxMessage();
     } else if (strCommand == NetMsgType::BLOCK && !fImporting && !fReindex) {
         // Ignore blocks received while importing
-        networkMessage = new BlockMessage();
+        networkMessage = new Network::BlockMessage();
         // BUIP010 Xtreme Thinblocks: end section
     } else if (strCommand == NetMsgType::GETADDR) {
-        networkMessage = new GetAddrMessage();
+        networkMessage = new Network::GetAddrMessage();
     } else if (strCommand == NetMsgType::MEMPOOL) {
-        networkMessage = new MemPoolMessage();
+        networkMessage = new Network::MemPoolMessage();
     } else if (strCommand == NetMsgType::PING) {
-        networkMessage = new PingMessage();
+        networkMessage = new Network::PingMessage();
     } else if (strCommand == NetMsgType::PONG) {
-        networkMessage = new PongMessage();
+        networkMessage = new Network::PongMessage();
     } else if (strCommand == NetMsgType::FILTERLOAD) {
-        networkMessage = new FilterLoadMessage();
+        networkMessage = new Network::FilterLoadMessage();
     } else if (strCommand == NetMsgType::FILTERADD) {
-        networkMessage = new FilterAddMessage();
+        networkMessage = new Network::FilterAddMessage();
     } else if (strCommand == NetMsgType::FILTERCLEAR) {
-        networkMessage = new FilterClearMessage();
+        networkMessage = new Network::FilterClearMessage();
     } else if (strCommand == NetMsgType::REJECT) {
-        networkMessage = new RejectMessage();
+        networkMessage = new Network::RejectMessage();
     } else if (strCommand == NetMsgType::XPEDITEDREQUEST) {
-        networkMessage = new ExpeditedRequestMessage();
+        networkMessage = new Network::ExpeditedRequestMessage();
     } else if (strCommand == NetMsgType::XPEDITEDBLK) {
-        networkMessage = new ExpeditedBlockMessage();
+        networkMessage = new Network::ExpeditedBlockMessage();
     } else if (strCommand == NetMsgType::VERSION2) {
-        networkMessage = new Version2Message();
+        networkMessage = new Network::Version2Message();
     } else if (strCommand == NetMsgType::VERACK2) {
-        networkMessage = new VersionAck2Message();
+        networkMessage = new Network::VersionAck2Message();
     } else {
         // Ignore unknown commands for extensibility
         logDebug(Log::Net) << "Unknown command" << SanitizeString(strCommand) << "from peer:" << pfrom->id;

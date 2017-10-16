@@ -21,7 +21,7 @@
 
 #include "ExpeditedRequestMessage.h"
 
-namespace {
+namespace Network {
     bool ExpeditedRequestMessage::handle(CNode *const pfrom,
                                          CDataStream &vRecv,
                                          int64_t nTimeReceived,

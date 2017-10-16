@@ -21,7 +21,7 @@
 
 #include "VerAckMessage.h"
 
-namespace {
+namespace Network {
 
     CNodeState *State(NodeId pnode);
 

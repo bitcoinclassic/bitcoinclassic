@@ -21,7 +21,7 @@
 
 #include "FilterLoadMessage.h"
 
-namespace {
+namespace Network {
 
     bool FilterLoadMessage::handle(CNode *const pfrom,
                                    CDataStream &vRecv,

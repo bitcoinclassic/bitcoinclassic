@@ -4,7 +4,7 @@
 
 #include "SendHeadersMessage.h"
 
-namespace {
+namespace Network {
 
     bool SendHeadersMessage::handle(CNode *const pfrom,
                                     CDataStream &vRecv,

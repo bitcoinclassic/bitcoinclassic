@@ -25,7 +25,7 @@
 
 #include "NetworkMessage.h"
 
-namespace {
+namespace Network {
 
     class ExpeditedRequestMessage : public NetworkMessage {
     public:

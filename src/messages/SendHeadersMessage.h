@@ -7,7 +7,7 @@
 
 #include "NetworkMessage.h"
 
-namespace {
+namespace Network {
     class SendHeadersMessage :
             public NetworkMessage {
     public:

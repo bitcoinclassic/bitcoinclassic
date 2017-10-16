@@ -21,7 +21,7 @@
 
 #include "FilterAddMessage.h"
 
-namespace {
+namespace Network {
     bool FilterAddMessage::handle(CNode *const pfrom,
                                   CDataStream &vRecv,
                                   int64_t nTimeReceived,

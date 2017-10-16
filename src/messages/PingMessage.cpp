@@ -20,7 +20,7 @@
  */
 #include "PingMessage.h"
 
-namespace {
+namespace Network {
     bool PingMessage::handle(CNode *const pfrom,
                              CDataStream &vRecv,
                              int64_t nTimeReceived,

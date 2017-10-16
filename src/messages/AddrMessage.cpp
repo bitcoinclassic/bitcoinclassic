@@ -21,7 +21,7 @@
 
 #include "AddrMessage.h"
 
-namespace {
+namespace Network {
     bool AddrMessage::handle(CNode *const pfrom,
                              CDataStream &vRecv,
                              int64_t nTimeReceived,

@@ -24,7 +24,7 @@
 
 #include "NetworkMessage.h"
 
-namespace {
+namespace Network {
     class XThinBlockMessage : public NetworkMessage {
     public:
         ~XThinBlockMessage() {}

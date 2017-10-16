@@ -21,7 +21,7 @@
 
 #include "ExpeditedBlockMessage.h"
 
-namespace {
+namespace Network {
     bool ExpeditedBlockMessage::handle(CNode *const pfrom,
                                        CDataStream &vRecv,
                                        int64_t nTimeReceived,

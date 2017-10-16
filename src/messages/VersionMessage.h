@@ -24,7 +24,7 @@
 #include "NetworkMessage.h"
 #include <thinblock.h>
 
-namespace {
+namespace Network {
 
     class VersionMessage : public NetworkMessage {
     public:

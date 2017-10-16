@@ -25,7 +25,7 @@
 #include "NetworkMessage.h"
 #include "hash.h"
 
-namespace {
+namespace Network {
     class AddrMessage : public NetworkMessage {
     public:
         ~AddrMessage() {}

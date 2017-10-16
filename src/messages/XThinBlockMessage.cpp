@@ -20,7 +20,7 @@
  */
 #include "XThinBlockMessage.h"
 
-namespace {
+namespace Network {
     bool XThinBlockMessage::handle(CNode *const pfrom,
                                    CDataStream &vRecv,
                                    int64_t nTimeReceived,

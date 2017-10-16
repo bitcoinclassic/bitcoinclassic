@@ -21,7 +21,7 @@
 
 #include "MemPoolMessage.h"
 
-namespace {
+namespace Network {
     bool MemPoolMessage::handle(CNode *const pfrom,
                                 CDataStream &vRecv,
                                 int64_t nTimeReceived,

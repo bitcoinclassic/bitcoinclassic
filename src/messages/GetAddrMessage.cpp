@@ -21,7 +21,7 @@
 
 #include "GetAddrMessage.h"
 
-namespace {
+namespace Network {
 
     bool GetAddrMessage::handle(CNode *const pfrom,
                                 CDataStream &vRecv,

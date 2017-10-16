@@ -21,14 +21,14 @@
 
 #include "GetBlocksMessage.h"
 
-namespace {
-    bool
-    GetBlocksMessage::handle(CNode *const pfrom,
-                             CDataStream &vRecv,
-                             int64_t nTimeReceived,
-                             std::string &strCommand,
-                             const bool xthinEnabled,
-                             const bool fReindexing) {
+namespace Network {
+    bool GetBlocksMessage::handle(CNode *const pfrom,
+                                  CDataStream &vRecv,
+                                  int64_t nTimeReceived,
+                                  std::string &strCommand,
+                                  const bool xthinEnabled,
+                                  const bool fReindexing)
+    {
         const CChainParams chainparams = Params();
         CBlockLocator locator;
         uint256 hashStop;

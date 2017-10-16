@@ -21,13 +21,14 @@
 
 #include "GetHeadersMessage.h"
 
-namespace {
+namespace Network {
     bool GetHeadersMessage::handle(CNode *const pfrom,
                                    CDataStream &vRecv,
                                    int64_t nTimeReceived,
                                    std::string &strCommand,
                                    const bool xthinEnabled,
-                                   const bool fReindexing) {
+                                   const bool fReindexing)
+    {
         CBlockLocator locator;
         uint256 hashStop;
         vRecv >> locator >> hashStop;

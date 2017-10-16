@@ -21,7 +21,7 @@
 
 #include "BlockMessage.h"
 
-namespace {
+namespace Network {
     bool BlockMessage::handle(CNode *const pfrom,
                               CDataStream &vRecv,
                               int64_t nTimeReceived,
