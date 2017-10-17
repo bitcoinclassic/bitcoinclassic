@@ -179,6 +179,19 @@ void UnregisterNodeSignals(CNodeSignals& nodeSignals)
     nodeSignals.FinalizeNode.disconnect(&FinalizeNode);
 }
 
+CBlockIndex *FindForkInGlobalIndex(const CChain &chain, const CBlockLocator &locator) {
+    // Find the first block the caller has in the main chain
+    for (const uint256 &hash : locator.vHave) {
+        auto mi = Blocks::indexMap.find(hash);
+        if (mi != Blocks::indexMap.end()) {
+            CBlockIndex *pindex = (*mi).second;
+            if (chain.Contains(pindex))
+                return pindex;
+        }
+    }
+    return chain.Genesis();
+}
+
 CCoinsViewCache *pcoinsTip = NULL;
 
 bool IsFinalTx(const CTransaction &tx, int nBlockHeight, int64_t nBlockTime)

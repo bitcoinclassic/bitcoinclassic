@@ -66,9 +66,6 @@ namespace Network {
 
     bool CanDirectFetch(const Consensus::Params &consensusParams);
 
-    /** Find the last common block between the parameter chain and a locator. */
-    CBlockIndex *FindForkInGlobalIndex(const CChain &chain, const CBlockLocator &locator);
-
     void FindNextBlocksToDownload(NodeId nodeid, unsigned int count, std::vector<CBlockIndex*>& vBlocks, NodeId& nodeStaller);
 
     void MarkBlockAsInFlight(NodeId nodeid, const uint256& hash, const Consensus::Params& consensusParams, CBlockIndex *pindex = NULL);

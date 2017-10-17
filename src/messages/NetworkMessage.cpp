@@ -105,20 +105,6 @@ namespace Network {
         return chainActive.Tip()->GetBlockTime() > GetAdjustedTime() - consensusParams.nPowTargetSpacing * 20;
     }
 
-    // Used only in GetBlocksMessage and GetHeadersMessage
-    CBlockIndex *FindForkInGlobalIndex(const CChain &chain, const CBlockLocator &locator) {
-        // Find the first block the caller has in the main chain
-        for (const uint256 &hash : locator.vHave) {
-            auto mi = Blocks::indexMap.find(hash);
-            if (mi != Blocks::indexMap.end()) {
-                CBlockIndex *pindex = (*mi).second;
-                if (chain.Contains(pindex))
-                    return pindex;
-            }
-        }
-        return chain.Genesis();
-    }
-
     /**
      * Find the last common ancestor two blocks have.
      * Both pa and pb must be non-NULL.
