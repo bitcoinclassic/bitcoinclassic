@@ -930,28 +930,6 @@ static void AlertNotify(const std::string& strMessage, bool fThread)
         runCommand(strCmd);
 }
 
-// Requires cs_main.
-void Misbehaving(NodeId nodeId, int howmuch)
-{
-    if (howmuch == 0)
-        return;
-
-    CNodeState *state = State(nodeId);
-    if (state == NULL)
-        return;
-
-    state->nMisbehavior += howmuch;
-    int banscore = GetArg("-banscore", DEFAULT_BANSCORE_THRESHOLD);
-    if (state->nMisbehavior >= banscore && state->nMisbehavior - howmuch < banscore) {
-        logCritical(Log::Net) << "Id:" << nodeId << state->nMisbehavior-howmuch << "=>" <<  state->nMisbehavior
-                    << "Ban threshold exceeded";
-        state->fShouldBan = true;
-        addrman.increaseUselessness(state->address, 2);
-    } else {
-        logWarning(Log::Net) << "Misbehaving" << "Id:" << nodeId << state->nMisbehavior-howmuch << "=>" << state->nMisbehavior;
-    }
-}
-
 void static InvalidChainFound(CBlockIndex* pindexNew)
 {
     if (!pindexBestInvalid || pindexNew->nChainWork > pindexBestInvalid->nChainWork)
@@ -980,7 +958,7 @@ void static InvalidBlockFound(CBlockIndex *pindex, const CValidationState &state
             CBlockReject reject = {(unsigned char)state.GetRejectCode(), state.GetRejectReason().substr(0, MAX_REJECT_MESSAGE_LENGTH), pindex->GetBlockHash()};
             State(it->second)->rejects.push_back(reject);
             if (nDoS > 0)
-                Misbehaving(it->second, nDoS);
+                Network::Misbehaving(it->second, nDoS);
         }
     }
     if (!state.CorruptionPossible()) {
@@ -3525,7 +3503,7 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         networkMessage = new Network::VersionMessage();
     } else if (pfrom->nVersion == 0) {
         // Must have a version message before anything else
-        Misbehaving(pfrom->GetId(), 1);
+        Network::Misbehaving(pfrom->GetId(), 1);
         return false;
     } else if (strCommand == NetMsgType::VERACK) {
         networkMessage = new Network::VerAckMessage();
@@ -3677,7 +3655,7 @@ bool ProcessMessages(CNode* pfrom)
         if (!hdr.IsValid(pfrom->magic())) {
             logWarning(Log::Net) << "PROCESSMESSAGE: ERRORS IN HEADER" << SanitizeString(msg.hdr.GetCommand()) << "peer:" << pfrom->id;
             LOCK(cs_main);
-            Misbehaving(pfrom->id, 5);
+            Network::Misbehaving(pfrom->id, 5);
             continue;
         }
         std::string strCommand = hdr.GetCommand();

@@ -254,8 +254,6 @@ void UnlinkPrunedFiles(std::set<int>& setFilesToPrune);
 
 /** Get statistics from node state */
 bool GetNodeStateStats(NodeId nodeid, CNodeStateStats &stats);
-/** Increase a node's misbehavior score. */
-void Misbehaving(NodeId nodeid, int howmuch);
 
 /** Flush all state, indexes and buffers to disk. */
 void FlushStateToDisk();

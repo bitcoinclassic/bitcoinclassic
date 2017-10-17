@@ -272,6 +272,28 @@ namespace Network {
         return false;
     }
 
+    // Requires cs_main.
+    void Misbehaving(NodeId nodeId, int howmuch) {
+        if (howmuch == 0)
+            return;
+
+        CNodeState *state = State(nodeId);
+        if (state == nullptr)
+            return;
+
+        state->nMisbehavior += howmuch;
+        int banscore = GetArg("-banscore", DEFAULT_BANSCORE_THRESHOLD);
+        if (state->nMisbehavior >= banscore && state->nMisbehavior - howmuch < banscore) {
+            logCritical(Log::Net) << "Id:" << nodeId << state->nMisbehavior - howmuch << "=>" << state->nMisbehavior
+                                  << "Ban threshold exceeded";
+            state->fShouldBan = true;
+            addrman.increaseUselessness(state->address, 2);
+        } else {
+            logWarning(Log::Net) << "Misbehaving" << "Id:" << nodeId << state->nMisbehavior - howmuch << "=>"
+                                 << state->nMisbehavior;
+        }
+    }
+
     // Requires cs_main
     bool PeerHasHeader(CNodeState *state, CBlockIndex *pindex) {
         if (state->pindexBestKnownBlock && pindex == state->pindexBestKnownBlock->GetAncestor(pindex->nHeight))

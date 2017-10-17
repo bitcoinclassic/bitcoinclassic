@@ -75,6 +75,8 @@ namespace Network {
 
     bool MarkBlockAsReceived(const uint256& hash);
 
+    void Misbehaving(NodeId nodeId, int howmuch);
+
     bool PeerHasHeader(CNodeState *state, CBlockIndex *pindex);
 
     void ProcessBlockAvailability(NodeId nodeid);
