@@ -260,13 +260,6 @@ void FlushStateToDisk();
 
 CBlockIndex* AddToBlockIndex(const CBlockHeader& block);
 
-enum FlushStateMode {
-    FLUSH_STATE_NONE,
-    FLUSH_STATE_IF_NEEDED,
-    FLUSH_STATE_PERIODIC,
-    FLUSH_STATE_ALWAYS
-};
-
 /** Prune block files and flush state to disk. */
 void PruneAndFlush();
 
