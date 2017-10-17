@@ -27,12 +27,12 @@ namespace Network {
     bool AcceptBlockHeader(const CBlockHeader &block,
                            CValidationState &state,
                            const CChainParams &chainparams,
-                           CBlockIndex **ppindex = NULL) {
+                           CBlockIndex **ppindex = nullptr) {
         AssertLockHeld(cs_main);
         // Check for duplicate
         uint256 hash = block.GetHash();
         auto miSelf = Blocks::indexMap.find(hash);
-        CBlockIndex *pindex = NULL;
+        CBlockIndex *pindex = nullptr;
         if (hash != chainparams.GetConsensus().hashGenesisBlock) {
 
             if (miSelf != Blocks::indexMap.end()) {
@@ -49,7 +49,7 @@ namespace Network {
                 return false;
 
             // Get prev block index
-            CBlockIndex *pindexPrev = NULL;
+            CBlockIndex *pindexPrev = nullptr;
             auto mi = Blocks::indexMap.find(block.hashPrevBlock);
             if (mi == Blocks::indexMap.end())
                 return state.DoS(10, error("%s: prev block not found", __func__), 0, "bad-prevblk");
@@ -64,7 +64,7 @@ namespace Network {
             if (!ContextualCheckBlockHeader(block, state, pindexPrev))
                 return false;
         }
-        if (pindex == NULL)
+        if (pindex == nullptr)
             pindex = AddToBlockIndex(block);
 
         if (ppindex)
@@ -108,7 +108,7 @@ namespace Network {
     // Used only in GetBlocksMessage and GetHeadersMessage
     CBlockIndex *FindForkInGlobalIndex(const CChain &chain, const CBlockLocator &locator) {
         // Find the first block the caller has in the main chain
-        BOOST_FOREACH(const uint256 &hash, locator.vHave) {
+        for (const uint256 &hash : locator.vHave) {
             auto mi = Blocks::indexMap.find(hash);
             if (mi != Blocks::indexMap.end()) {
                 CBlockIndex *pindex = (*mi).second;
@@ -143,24 +143,24 @@ namespace Network {
     }
 
     /** Update pindexLastCommonBlock and add not-in-flight missing successors to vBlocks, until it has
-         *  at most count entries. */
+     *  at most count entries. */
     void FindNextBlocksToDownload(NodeId nodeid, unsigned int count, std::vector<CBlockIndex*>& vBlocks, NodeId& nodeStaller) {
         if (count == 0)
             return;
 
         vBlocks.reserve(vBlocks.size() + count);
         CNodeState *state = State(nodeid);
-        assert(state != NULL);
+        assert(state != nullptr);
 
         // Make sure pindexBestKnownBlock is up to date, we'll need it.
         Network::ProcessBlockAvailability(nodeid);
 
-        if (state->pindexBestKnownBlock == NULL || state->pindexBestKnownBlock->nChainWork < chainActive.Tip()->nChainWork) {
+        if (state->pindexBestKnownBlock == nullptr || state->pindexBestKnownBlock->nChainWork < chainActive.Tip()->nChainWork) {
             // This peer has nothing interesting.
             return;
         }
 
-        if (state->pindexLastCommonBlock == NULL) {
+        if (state->pindexLastCommonBlock == nullptr) {
             // Bootstrap quickly by guessing a parent of our best tip is the forking point.
             // Guessing wrong in either direction is not a problem.
             state->pindexLastCommonBlock = chainActive[std::min(state->pindexBestKnownBlock->nHeight, chainActive.Height())];
@@ -196,7 +196,7 @@ namespace Network {
             // are not yet downloaded and not in flight to vBlocks. In the mean time, update
             // pindexLastCommonBlock as long as all ancestors are already downloaded, or if it's
             // already part of our chain (and therefore don't need it even if pruned).
-            BOOST_FOREACH(CBlockIndex* pindex, vToFetch) {
+            for (CBlockIndex *pindex : vToFetch) {
                 if (!pindex->IsValid(BLOCK_VALID_TREE)) {
                     // We consider the chain that this peer is on invalid.
                     return;
@@ -227,14 +227,14 @@ namespace Network {
     }
 
     // Requires cs_main.
-    void MarkBlockAsInFlight(NodeId nodeid, const uint256& hash, const Consensus::Params& consensusParams, CBlockIndex *pindex = NULL) {
+    void MarkBlockAsInFlight(NodeId nodeid, const uint256& hash, const Consensus::Params& consensusParams, CBlockIndex *pindex = nullptr) {
         CNodeState *state = State(nodeid);
-        assert(state != NULL);
+        assert(state != nullptr);
 
         // Make sure it's not listed somewhere already.
         MarkBlockAsReceived(hash);
 
-        QueuedBlock newentry = {hash, pindex, pindex != NULL};
+        QueuedBlock newentry = {hash, pindex, pindex != nullptr};
         std::list<QueuedBlock>::iterator it = state->vBlocksInFlight.insert(state->vBlocksInFlight.end(), newentry);
         state->nBlocksInFlight++;
         state->nBlocksInFlightValidHeaders += newentry.fValidatedHeaders;
@@ -242,7 +242,7 @@ namespace Network {
             // We're starting a block download (batch) from this peer.
             state->nDownloadingSince = GetTimeMicros();
         }
-        if (state->nBlocksInFlightValidHeaders == 1 && pindex != NULL) {
+        if (state->nBlocksInFlightValidHeaders == 1 && pindex != nullptr) {
             nPeersWithValidatedDownloads++;
         }
         mapBlocksInFlight[hash] = std::make_pair(nodeid, it);
@@ -285,12 +285,12 @@ namespace Network {
     /** Check whether the last unknown block a peer advertised is not yet known. */
     void ProcessBlockAvailability(NodeId nodeid) {
         CNodeState *state = State(nodeid);
-        assert(state != NULL);
+        assert(state != nullptr);
 
         if (!state->hashLastUnknownBlock.IsNull()) {
             auto itOld = Blocks::indexMap.find(state->hashLastUnknownBlock);
             if (itOld != Blocks::indexMap.end() && itOld->second->nChainWork > 0) {
-                if (state->pindexBestKnownBlock == NULL ||
+                if (state->pindexBestKnownBlock == nullptr ||
                     itOld->second->nChainWork >= state->pindexBestKnownBlock->nChainWork)
                     state->pindexBestKnownBlock = itOld->second;
                 state->hashLastUnknownBlock.SetNull();
@@ -328,7 +328,7 @@ namespace Network {
                             // To prevent fingerprinting attacks, only send blocks outside of the active
                             // chain if they are valid, and no more than a month older (both in time, and in
                             // best equivalent proof of work) than the best header chain we know about.
-                            send = mi->second->IsValid(BLOCK_VALID_SCRIPTS) && (pindexBestHeader != NULL) &&
+                            send = mi->second->IsValid(BLOCK_VALID_SCRIPTS) && (pindexBestHeader != nullptr) &&
                                    (pindexBestHeader->GetBlockTime() - mi->second->GetBlockTime() < nOneMonth) &&
                                    (GetBlockProofEquivalentTime(*pindexBestHeader, *mi->second, *pindexBestHeader,
                                                                 consensusParams) < nOneMonth);
@@ -342,7 +342,7 @@ namespace Network {
                     // disconnect node in case we have reached the outbound limit for serving historical blocks
                     // never disconnect whitelisted nodes
                     static const int nOneWeek = 7 * 24 * 60 * 60; // assume > 1 week = historical
-                    if (send && CNode::OutboundTargetReached(true) && (((pindexBestHeader != NULL) &&
+                    if (send && CNode::OutboundTargetReached(true) && (((pindexBestHeader != nullptr) &&
                                                                         (pindexBestHeader->GetBlockTime() -
                                                                          mi->second->GetBlockTime() > nOneWeek)) ||
                                                                        inv.type == MSG_FILTERED_BLOCK) &&
@@ -391,9 +391,9 @@ namespace Network {
                                 // Thus, the protocol spec specified allows for us to provide duplicate txn here,
                                 // however we MUST always provide at least what the remote peer needs
                                 typedef std::pair<unsigned int, uint256> PairType;
-                                BOOST_FOREACH(PairType &pair, merkleBlock.vMatchedTxn)
-                                    pfrom->PushMessage(NetMsgType::TX,
-                                                       block.vtx[pair.first]);
+                                for (PairType &pair : merkleBlock.vMatchedTxn) {
+                                    pfrom->PushMessage(NetMsgType::TX, block.vtx[pair.first]);
+                                }
                                 sendFullBlock = false;
                             }
                         }
@@ -463,14 +463,14 @@ namespace Network {
     // Used in HeadersMessage, InvMessage
     void UpdateBlockAvailability(NodeId nodeid, const uint256 &hash) {
         CNodeState *state = State(nodeid);
-        assert(state != NULL);
+        assert(state != nullptr);
 
         Network::ProcessBlockAvailability(nodeid);
 
         auto it = Blocks::indexMap.find(hash);
         if (it != Blocks::indexMap.end() && it->second->nChainWork > 0) {
             // An actually better block was announced.
-            if (state->pindexBestKnownBlock == NULL ||
+            if (state->pindexBestKnownBlock == nullptr ||
                 it->second->nChainWork >= state->pindexBestKnownBlock->nChainWork)
                 state->pindexBestKnownBlock = it->second;
         } else {
