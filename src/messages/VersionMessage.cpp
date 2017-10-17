@@ -22,16 +22,6 @@
 #include "VersionMessage.h"
 
 namespace Network {
-    void UpdatePreferredDownload(CNode* node, CNodeState* state)
-    {
-        nPreferredDownload -= state->fPreferredDownload;
-
-        // Whether this node should be marked as a preferred download node.
-        state->fPreferredDownload = (!node->fInbound || node->fWhitelisted) && !node->fOneShot && !node->fClient;
-
-        nPreferredDownload += state->fPreferredDownload;
-    }
-
     bool VersionMessage::handle(CNode *const pfrom,
                                 CDataStream &vRecv,
                                 int64_t nTimeReceived,
@@ -43,7 +33,7 @@ namespace Network {
         if (pfrom->nVersion != 0) {
             pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_DUPLICATE,
                                std::string("Duplicate version message"));
-            Misbehaving(pfrom->GetId(), 1);
+            misbehaving(pfrom->GetId(), 1);
             return false;
         }
 
@@ -96,7 +86,11 @@ namespace Network {
         pfrom->fClient = !(pfrom->nServices & NODE_NETWORK);
 
         // Potentially mark this peer as a preferred download peer.
-        UpdatePreferredDownload(pfrom, State(pfrom->GetId()));
+        CNodeState* state = State(pfrom->GetId());
+        nPreferredDownload -= state->fPreferredDownload;
+        // Whether this node should be marked as a preferred download node.
+        state->fPreferredDownload = (!pfrom->fInbound || pfrom->fWhitelisted) && !pfrom->fOneShot && !pfrom->fClient;
+        nPreferredDownload += state->fPreferredDownload;
 
         // Change version
         pfrom->PushMessage(NetMsgType::VERACK);
@@ -154,7 +148,7 @@ namespace Network {
             pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_DUPLICATE,
                                std::string("Duplicate version2 message"));
             LOCK(cs_main);
-            Misbehaving(pfrom->GetId(), 15);
+            misbehaving(pfrom->GetId(), 15);
             return false;
         }
 

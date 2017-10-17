@@ -33,7 +33,7 @@ namespace Network {
         // Bypass the normal CBlock deserialization, as we don't want to risk deserializing 2000 full blocks.
         unsigned int nCount = ReadCompactSize(vRecv);
         if (nCount > MAX_HEADERS_RESULTS) {
-            Misbehaving(pfrom->GetId(), 20);
+            misbehaving(pfrom->GetId(), 20);
             return error("headers message size = %u", nCount);
         }
         headers.resize(nCount);
@@ -54,17 +54,17 @@ namespace Network {
         BOOST_FOREACH(const CBlockHeader &header, headers) {
             CValidationState state;
             if (pindexLast != NULL && header.hashPrevBlock != pindexLast->GetBlockHash()) {
-                Misbehaving(pfrom->GetId(), 20);
+                misbehaving(pfrom->GetId(), 20);
                 logWarning(Log::Net)
                     << "p2p HEADERS command received non-continues headers sequence from"
                     << pfrom->GetId();
                 return false;
             }
-            if (!AcceptBlockHeader(header, state, chainparams, &pindexLast)) {
+            if (!acceptBlockHeader(header, state, chainparams, &pindexLast)) {
                 int nDoS;
                 if (state.IsInvalid(nDoS)) {
                     if (nDoS > 0)
-                        Misbehaving(pfrom->GetId(), nDoS);
+                        misbehaving(pfrom->GetId(), nDoS);
                     logWarning(Log::Net) << "p2p HEADERS command received invalid header from"
                                          << pfrom->GetId();
                     return false;
@@ -73,7 +73,7 @@ namespace Network {
         }
 
         if (pindexLast)
-            UpdateBlockAvailability(pfrom->GetId(), pindexLast->GetBlockHash());
+            updateBlockAvailability(pfrom->GetId(), pindexLast->GetBlockHash());
 
         if (nCount == MAX_HEADERS_RESULTS && pindexLast) {
             // Headers message had its maximum size; the peer may have more headers.
@@ -88,7 +88,7 @@ namespace Network {
         if (pindexLast == nullptr) // should never hit.
             return false;
 
-        bool fCanDirectFetch = CanDirectFetch(chainparams.GetConsensus());
+        bool fCanDirectFetch = canDirectFetch(chainparams.GetConsensus());
         CNodeState *nodestate = State(pfrom->GetId());
         // If this set of headers is valid and ends in a block with at least as
         // much work as our tip, download as much as possible.
@@ -124,8 +124,8 @@ namespace Network {
                         break;
                     }
                     vGetData.push_back(CInv(MSG_BLOCK, pindex->GetBlockHash()));
-                    MarkBlockAsInFlight(pfrom->GetId(), pindex->GetBlockHash(),
-                                        chainparams.GetConsensus(), pindex);
+                                markBlockAsInFlight(pfrom->GetId(), pindex->GetBlockHash(),
+                                                    chainparams.GetConsensus(), pindex);
                     logDebug(Log::Net) << "Requesting block" << pindex->GetBlockHash() << "from  peer:"
                                        << pfrom->id;
                 }

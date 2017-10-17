@@ -32,7 +32,7 @@ namespace Network {
     {
         if (!GetBoolArg("-peerbloomfilters", true)) {
             LOCK(cs_main);
-            Misbehaving(pfrom->GetId(), 100);
+            misbehaving(pfrom->GetId(), 100);
             return false;
         }
 
@@ -42,7 +42,7 @@ namespace Network {
         if (!filter.IsWithinSizeConstraints()) {
             // There is no excuse for sending a too-large filter
             LOCK(cs_main);
-            Misbehaving(pfrom->GetId(), 100);
+            misbehaving(pfrom->GetId(), 100);
             return false;
         } else {
             LOCK(pfrom->cs_filter);

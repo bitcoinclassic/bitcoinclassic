@@ -971,7 +971,7 @@ void static InvalidBlockFound(CBlockIndex *pindex, const CValidationState &state
             CBlockReject reject = {(unsigned char)state.GetRejectCode(), state.GetRejectReason().substr(0, MAX_REJECT_MESSAGE_LENGTH), pindex->GetBlockHash()};
             State(it->second)->rejects.push_back(reject);
             if (nDoS > 0)
-                Network::Misbehaving(it->second, nDoS);
+                Network::misbehaving(it->second, nDoS);
         }
     }
     if (!state.CorruptionPossible()) {
@@ -2535,7 +2535,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW, bo
         return true;
 
     // Check that the header is valid (particularly PoW).  This is mostly
-    // redundant with the call in AcceptBlockHeader.
+    // redundant with the call in acceptBlockHeader.
     if (!CheckBlockHeader(block, state, fCheckPOW))
         return false;
 
@@ -2725,7 +2725,7 @@ static bool AcceptBlock(const CBlock& block, CValidationState& state, const CCha
 
     CBlockIndex *&pindex = *ppindex;
 
-    if (!Network::AcceptBlockHeader(block, state, chainparams, &pindex))
+    if (!Network::acceptBlockHeader(block, state, chainparams, &pindex))
         return false;
 
     // Try to process all requested blocks that we don't have, but only
@@ -2802,7 +2802,7 @@ bool ProcessNewBlock(CValidationState& state, const CChainParams& chainparams, c
 
     {
         LOCK(cs_main);
-        bool fRequested = Network::MarkBlockAsReceived(pblock->GetHash());
+        bool fRequested = Network::markBlockAsReceived(pblock->GetHash());
         fRequested |= fForceProcessing;
         if (!checked) {
             return error("%s: CheckBlock FAILED", __func__);
@@ -3523,7 +3523,7 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
         networkMessage = new Network::VersionMessage();
     } else if (pfrom->nVersion == 0) {
         // Must have a version message before anything else
-        Network::Misbehaving(pfrom->GetId(), 1);
+        Network::misbehaving(pfrom->GetId(), 1);
         return false;
     } else if (strCommand == NetMsgType::VERACK) {
         networkMessage = new Network::VerAckMessage();
@@ -3612,7 +3612,7 @@ bool ProcessMessages(CNode* pfrom)
     bool fOk = true;
 
     if (!pfrom->vRecvGetData.empty())
-        Network::ProcessGetData(pfrom, chainparams.GetConsensus());
+        Network::processGetData(pfrom, chainparams.GetConsensus());
 
     // this maintains the order of responses
     if (!pfrom->vRecvGetData.empty()) return fOk;
@@ -3675,7 +3675,7 @@ bool ProcessMessages(CNode* pfrom)
         if (!hdr.IsValid(pfrom->magic())) {
             logWarning(Log::Net) << "PROCESSMESSAGE: ERRORS IN HEADER" << SanitizeString(msg.hdr.GetCommand()) << "peer:" << pfrom->id;
             LOCK(cs_main);
-            Network::Misbehaving(pfrom->id, 5);
+            Network::misbehaving(pfrom->id, 5);
             continue;
         }
         std::string strCommand = hdr.GetCommand();
@@ -3884,7 +3884,7 @@ bool SendMessages(CNode* pto)
             std::vector<CBlock> vHeaders;
             bool fRevertToInv = (!state.fPreferHeaders || pto->vBlockHashesToAnnounce.size() > MAX_BLOCKS_TO_ANNOUNCE);
             CBlockIndex *pBestIndex = NULL; // last header queued for delivery
-            Network::ProcessBlockAvailability(pto->id); // ensure pindexBestKnownBlock is up-to-date
+            Network::processBlockAvailability(pto->id); // ensure pindexBestKnownBlock is up-to-date
 
             if (!fRevertToInv) {
                 bool fFoundStartingHeader = false;
@@ -3919,9 +3919,9 @@ bool SendMessages(CNode* pto)
                     if (fFoundStartingHeader) {
                         // add this to the headers message
                         vHeaders.push_back(pindex->GetBlockHeader());
-                    } else if (Network::PeerHasHeader(&state, pindex)) {
+                    } else if (Network::peerHasHeader(&state, pindex)) {
                         continue; // keep looking for the first new block
-                    } else if (pindex->pprev == NULL || Network::PeerHasHeader(&state, pindex->pprev)) {
+                    } else if (pindex->pprev == NULL || Network::peerHasHeader(&state, pindex->pprev)) {
                         // Peer doesn't have this header but they do have the prior one.
                         // Start sending headers.
                         fFoundStartingHeader = true;
@@ -3955,7 +3955,7 @@ bool SendMessages(CNode* pto)
                     // If the peer announced this block to us, don't inv it back.
                     // (Since block announcements may not be via inv's, we can't solely rely on
                     // setInventoryKnown to track this.)
-                    if (!Network::PeerHasHeader(&state, pindex)) {
+                    if (!Network::peerHasHeader(&state, pindex)) {
                         pto->PushInventory(CInv(MSG_BLOCK, hashToAnnounce));
                         LogPrint("net", "%s: sending inv peer=%d hash=%s\n", __func__,
                             pto->id, hashToAnnounce.ToString());
@@ -4058,7 +4058,8 @@ bool SendMessages(CNode* pto)
         if (!pto->fDisconnect && !pto->fClient && (fFetch || !IsInitialBlockDownload()) && state.nBlocksInFlight < MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
             std::vector<CBlockIndex*> vToDownload;
             NodeId staller = -1;
-            Network::FindNextBlocksToDownload(pto->GetId(), MAX_BLOCKS_IN_TRANSIT_PER_PEER - state.nBlocksInFlight, vToDownload, staller);
+            Network::findNextBlocksToDownload(pto->GetId(), MAX_BLOCKS_IN_TRANSIT_PER_PEER - state.nBlocksInFlight,
+                                              vToDownload, staller);
             BOOST_FOREACH(CBlockIndex *pindex, vToDownload) {
                 // BUIP010 Xtreme Thinblocks: begin section
                 if (IsThinBlocksEnabled() && IsChainNearlySyncd()) {
@@ -4071,7 +4072,7 @@ bool SendMessages(CNode* pto)
                             ss << CInv(MSG_XTHINBLOCK, pindex->GetBlockHash());
                             ss << filterMemPool;
                             pto->PushMessage(NetMsgType::GET_XTHIN, ss);
-                            Network::MarkBlockAsInFlight(pto->GetId(), pindex->GetBlockHash(), consensusParams, pindex);
+                            Network::markBlockAsInFlight(pto->GetId(), pindex->GetBlockHash(), consensusParams, pindex);
                             LogPrint("thin", "Requesting thinblock %s (%d) from peer %s (%d)\n", pindex->GetBlockHash().ToString(),
                                      pindex->nHeight, pto->addrName.c_str(), pto->id);
                         }
@@ -4091,12 +4092,12 @@ bool SendMessages(CNode* pto)
                             vGetData.push_back(CInv(MSG_BLOCK, pindex->GetBlockHash()));
                             logDebug(Log::Net) << "Requesting block" << pindex->GetBlockHash() << pindex->nHeight << "from peer" << pto->addrName << pto->id;
                         }
-                        Network::MarkBlockAsInFlight(pto->GetId(), pindex->GetBlockHash(), consensusParams, pindex);
+                        Network::markBlockAsInFlight(pto->GetId(), pindex->GetBlockHash(), consensusParams, pindex);
                     }
                 }
                 else {
                     vGetData.push_back(CInv(MSG_BLOCK, pindex->GetBlockHash()));
-                    Network::MarkBlockAsInFlight(pto->GetId(), pindex->GetBlockHash(), consensusParams, pindex);
+                    Network::markBlockAsInFlight(pto->GetId(), pindex->GetBlockHash(), consensusParams, pindex);
                     logDebug(Log::Net) << "Requesting block" << pindex->GetBlockHash() << pindex->nHeight << "from peer" << pto->id;
                 }
                 // BUIP010 Xtreme Thinblocks: end section
@@ -4115,7 +4116,7 @@ bool SendMessages(CNode* pto)
         while (!pto->fDisconnect && !pto->mapAskFor.empty() && (*pto->mapAskFor.begin()).first <= nNow)
         {
             const CInv& inv = (*pto->mapAskFor.begin()).second;
-            if (!Network::AlreadyHave(inv))
+            if (!Network::alreadyHave(inv))
             {
                 logDebug(Log::Net) << "Requesting" << inv << "peer:" << pto->id;
                 vGetData.push_back(inv);

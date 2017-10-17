@@ -32,7 +32,7 @@ namespace Network {
         std::vector<CInv> vInv;
         vRecv >> vInv;
         if (vInv.size() > MAX_INV_SZ) {
-            Misbehaving(pfrom->GetId(), 20);
+            misbehaving(pfrom->GetId(), 20);
             return error("message getdata size() = %u", vInv.size());
         }
 
@@ -43,7 +43,7 @@ namespace Network {
             logDebug(Log::Net) << "received getdata for:" << vInv[0].ToString() << "peer:" << pfrom->id;
 
         pfrom->vRecvGetData.insert(pfrom->vRecvGetData.end(), vInv.begin(), vInv.end());
-        ProcessGetData(pfrom, Params().GetConsensus());
+        processGetData(pfrom, Params().GetConsensus());
         return true;
     }
 }

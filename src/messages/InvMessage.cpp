@@ -31,7 +31,7 @@ namespace Network {
         std::vector<CInv> vInv;
         vRecv >> vInv;
         if (vInv.size() > MAX_INV_SZ) {
-            Misbehaving(pfrom->GetId(), 20);
+            misbehaving(pfrom->GetId(), 20);
             return error("message inv size() = %u", vInv.size());
         }
 
@@ -51,11 +51,11 @@ namespace Network {
             boost::this_thread::interruption_point();
             pfrom->AddInventoryKnown(inv);
 
-            bool fAlreadyHave = AlreadyHave(inv);
+            bool fAlreadyHave = alreadyHave(inv);
             logDebug(Log::Net) << "got inv:" << inv << (fAlreadyHave ? "have" : "new") << "peer:" << pfrom->id;
 
             if (inv.type == MSG_BLOCK) {
-                UpdateBlockAvailability(pfrom->GetId(), inv.hash);
+                updateBlockAvailability(pfrom->GetId(), inv.hash);
                 if (!fAlreadyHave && !fImporting && !fReindexing && !mapBlocksInFlight.count(inv.hash)) {
                     // First request the headers preceding the announced block. In the normal fully-synced
                     // case where a new block is announced that succeeds the current tip (no reorganization),
@@ -68,7 +68,7 @@ namespace Network {
                     pfrom->PushMessage(NetMsgType::GETHEADERS, chainActive.GetLocator(pindexBestHeader), inv.hash);
                     const CChainParams chainparams = Params();
                     CNodeState *nodestate = State(pfrom->GetId());
-                    if (CanDirectFetch(chainparams.GetConsensus()) &&
+                    if (canDirectFetch(chainparams.GetConsensus()) &&
                         nodestate->nBlocksInFlight < MAX_BLOCKS_IN_TRANSIT_PER_PEER) {
                         // BUIP010 Xtreme Thinblocks: begin section
                         CInv inv2(inv);
@@ -85,7 +85,7 @@ namespace Network {
                                     ss << inv2;
                                     ss << filterMemPool;
                                     pfrom->PushMessage(NetMsgType::GET_XTHIN, ss);
-                                    MarkBlockAsInFlight(pfrom->GetId(), inv.hash, chainparams.GetConsensus());
+                                    markBlockAsInFlight(pfrom->GetId(), inv.hash, chainparams.GetConsensus());
                                     LogPrint("thin", "Requesting Thinblock %s from peer %s (%d)\n",
                                              inv2.hash.ToString(), pfrom->addrName.c_str(), pfrom->id);
                                 }
@@ -107,11 +107,11 @@ namespace Network {
                                              inv2.hash.ToString(), pfrom->addrName.c_str(), pfrom->id);
                                     vToFetch.push_back(inv2);
                                 }
-                                MarkBlockAsInFlight(pfrom->GetId(), inv.hash, chainparams.GetConsensus());
+                                markBlockAsInFlight(pfrom->GetId(), inv.hash, chainparams.GetConsensus());
                             }
                         } else {
                             vToFetch.push_back(inv2);
-                            MarkBlockAsInFlight(pfrom->GetId(), inv.hash, chainparams.GetConsensus());
+                            markBlockAsInFlight(pfrom->GetId(), inv.hash, chainparams.GetConsensus());
                             LogPrint("thin", "Requesting Regular Block %s from peer %s (%d)\n", inv2.hash.ToString(),
                                      pfrom->addrName.c_str(), pfrom->id);
                         }
@@ -132,7 +132,7 @@ namespace Network {
             GetMainSignals().Inventory(inv.hash);
 
             if (pfrom->nSendSize > (SendBufferSize() * 2)) {
-                Misbehaving(pfrom->GetId(), 50);
+                misbehaving(pfrom->GetId(), 50);
                 return error("send buffer size() = %u", pfrom->nSendSize);
             }
         }

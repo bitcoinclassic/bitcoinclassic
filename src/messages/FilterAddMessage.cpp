@@ -31,7 +31,7 @@ namespace Network {
     {
         if (!GetBoolArg("-peerbloomfilters", true)) {
             LOCK(cs_main);
-            Misbehaving(pfrom->GetId(), 100);
+            misbehaving(pfrom->GetId(), 100);
             return false;
         }
         std::vector<unsigned char> vData;
@@ -41,14 +41,14 @@ namespace Network {
         // and thus, the maximum size any matched object can have) in a filteradd message
         if (vData.size() > MAX_SCRIPT_ELEMENT_SIZE) {
             LOCK(cs_main);
-            Misbehaving(pfrom->GetId(), 100);
+            misbehaving(pfrom->GetId(), 100);
             return false;
         } else {
             LOCK(pfrom->cs_filter);
             if (pfrom->pfilter)
                 pfrom->pfilter->insert(vData);
             else
-                Misbehaving(pfrom->GetId(), 100);
+                misbehaving(pfrom->GetId(), 100);
         }
         return true;
     }

@@ -30,7 +30,7 @@ namespace Network {
     {
         if (!xthinEnabled) {
             LOCK(cs_main);
-            Misbehaving(pfrom->GetId(), 100);
+            misbehaving(pfrom->GetId(), 100);
             return false;
         }
         CXThinBlock thinBlock;
@@ -41,7 +41,7 @@ namespace Network {
         if (!CheckBlockHeader(thinBlock.header, state, true)) { // block header is bad
             LogPrint("thin", "Thinblock %s received with bad header from peer %s (%d)\n",
                      thinBlock.header.GetHash().ToString(), pfrom->addrName.c_str(), pfrom->id);
-            Misbehaving(pfrom->id, 20);
+            misbehaving(pfrom->id, 20);
             return false;
         } else if (!IsRecentlyExpeditedAndStore(thinBlock.header.GetHash()))
             SendExpeditedBlock(thinBlock, 0, pfrom);
@@ -58,7 +58,7 @@ namespace Network {
             LogPrint("thin", "Thinblock %s from peer %s (%d) received but we already have it\n", inv.hash.ToString(),
                      pfrom->addrName.c_str(), pfrom->id);
             LOCK(cs_main);
-            fAlreadyHave = AlreadyHave(inv); // I'll still continue processing if we don't have an accepted block yet
+            fAlreadyHave = alreadyHave(inv); // I'll still continue processing if we don't have an accepted block yet
         }
 
         if (!fAlreadyHave) {

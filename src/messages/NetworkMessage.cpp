@@ -24,7 +24,7 @@
 namespace Network {
 
     // Used in main.cpp::AcceptBlock, HeadersMessage
-    bool AcceptBlockHeader(const CBlockHeader &block,
+    bool acceptBlockHeader(const CBlockHeader &block,
                            CValidationState &state,
                            const CChainParams &chainparams,
                            CBlockIndex **ppindex = nullptr) {
@@ -74,7 +74,7 @@ namespace Network {
     }
 
     // Used in InvMesssage, TxMessage and XThinBlockMessage
-    bool AlreadyHave(const CInv &inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main) {
+    bool alreadyHave(const CInv &inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main) {
         switch (inv.type) {
             case MSG_TX: {
                 assert(recentRejects);
@@ -101,7 +101,7 @@ namespace Network {
 
     // Requires cs_main
     // Used by HeadersMessage and InvMessage
-    bool CanDirectFetch(const Consensus::Params &consensusParams) {
+    bool canDirectFetch(const Consensus::Params &consensusParams) {
         return chainActive.Tip()->GetBlockTime() > GetAdjustedTime() - consensusParams.nPowTargetSpacing * 20;
     }
 
@@ -130,7 +130,8 @@ namespace Network {
 
     /** Update pindexLastCommonBlock and add not-in-flight missing successors to vBlocks, until it has
      *  at most count entries. */
-    void FindNextBlocksToDownload(NodeId nodeid, unsigned int count, std::vector<CBlockIndex*>& vBlocks, NodeId& nodeStaller) {
+    void findNextBlocksToDownload(NodeId nodeid, unsigned int count, std::vector<CBlockIndex *> &vBlocks,
+                                  NodeId &nodeStaller) {
         if (count == 0)
             return;
 
@@ -139,7 +140,7 @@ namespace Network {
         assert(state != nullptr);
 
         // Make sure pindexBestKnownBlock is up to date, we'll need it.
-        Network::ProcessBlockAvailability(nodeid);
+        Network::processBlockAvailability(nodeid);
 
         if (state->pindexBestKnownBlock == nullptr || state->pindexBestKnownBlock->nChainWork < chainActive.Tip()->nChainWork) {
             // This peer has nothing interesting.
@@ -213,12 +214,13 @@ namespace Network {
     }
 
     // Requires cs_main.
-    void MarkBlockAsInFlight(NodeId nodeid, const uint256& hash, const Consensus::Params& consensusParams, CBlockIndex *pindex = nullptr) {
+    void markBlockAsInFlight(NodeId nodeid, const uint256 &hash, const Consensus::Params &consensusParams,
+                             CBlockIndex *pindex = nullptr) {
         CNodeState *state = State(nodeid);
         assert(state != nullptr);
 
         // Make sure it's not listed somewhere already.
-        MarkBlockAsReceived(hash);
+        markBlockAsReceived(hash);
 
         QueuedBlock newentry = {hash, pindex, pindex != nullptr};
         std::list<QueuedBlock>::iterator it = state->vBlocksInFlight.insert(state->vBlocksInFlight.end(), newentry);
@@ -236,7 +238,7 @@ namespace Network {
 
     // Requires cs_main.
     // Returns a bool indicating whether we requested this block.
-    bool MarkBlockAsReceived(const uint256& hash) {
+    bool markBlockAsReceived(const uint256 &hash) {
         std::map<uint256, std::pair<NodeId, std::list<QueuedBlock>::iterator> >::iterator itInFlight = mapBlocksInFlight.find(hash);
         if (itInFlight != mapBlocksInFlight.end()) {
             CNodeState *state = State(itInFlight->second.first);
@@ -259,7 +261,7 @@ namespace Network {
     }
 
     // Requires cs_main.
-    void Misbehaving(NodeId nodeId, int howmuch) {
+    void misbehaving(NodeId nodeId, int howmuch) {
         if (howmuch == 0)
             return;
 
@@ -275,13 +277,13 @@ namespace Network {
             state->fShouldBan = true;
             addrman.increaseUselessness(state->address, 2);
         } else {
-            logWarning(Log::Net) << "Misbehaving" << "Id:" << nodeId << state->nMisbehavior - howmuch << "=>"
+            logWarning(Log::Net) << "misbehaving" << "Id:" << nodeId << state->nMisbehavior - howmuch << "=>"
                                  << state->nMisbehavior;
         }
     }
 
     // Requires cs_main
-    bool PeerHasHeader(CNodeState *state, CBlockIndex *pindex) {
+    bool peerHasHeader(CNodeState *state, CBlockIndex *pindex) {
         if (state->pindexBestKnownBlock && pindex == state->pindexBestKnownBlock->GetAncestor(pindex->nHeight))
             return true;
         if (state->pindexBestHeaderSent && pindex == state->pindexBestHeaderSent->GetAncestor(pindex->nHeight))
@@ -289,9 +291,9 @@ namespace Network {
         return false;
     }
 
-    // Used in main.cpp (FindNextBlocksToDownload, SendMessages) and below on UpdateBlockAvailability
+    // Used in main.cpp (findNextBlocksToDownload, SendMessages) and below on updateBlockAvailability
     /** Check whether the last unknown block a peer advertised is not yet known. */
-    void ProcessBlockAvailability(NodeId nodeid) {
+    void processBlockAvailability(NodeId nodeid) {
         CNodeState *state = State(nodeid);
         assert(state != nullptr);
 
@@ -307,7 +309,7 @@ namespace Network {
     }
 
     // Used in main.cpp::ProcessMessages, GetDataMessage, GetXThinMessage
-    void ProcessGetData(CNode *pfrom, const Consensus::Params &consensusParams) {
+    void processGetData(CNode *pfrom, const Consensus::Params &consensusParams) {
         std::deque<CInv>::iterator it = pfrom->vRecvGetData.begin();
 
         std::vector<CInv> vNotFound;
@@ -469,11 +471,11 @@ namespace Network {
 
     /** Update tracking information about which blocks a peer is assumed to have. */
     // Used in HeadersMessage, InvMessage
-    void UpdateBlockAvailability(NodeId nodeid, const uint256 &hash) {
+    void updateBlockAvailability(NodeId nodeid, const uint256 &hash) {
         CNodeState *state = State(nodeid);
         assert(state != nullptr);
 
-        Network::ProcessBlockAvailability(nodeid);
+        Network::processBlockAvailability(nodeid);
 
         auto it = Blocks::indexMap.find(hash);
         if (it != Blocks::indexMap.end() && it->second->nChainWork > 0) {

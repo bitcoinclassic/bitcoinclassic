@@ -31,7 +31,7 @@ namespace Network {
     {
         if (!xthinEnabled) {
             LOCK(cs_main);
-            Misbehaving(pfrom->GetId(), 100);
+            misbehaving(pfrom->GetId(), 100);
             return false;
         }
         CBloomFilter filterMemPool;
@@ -39,12 +39,12 @@ namespace Network {
         vRecv >> inv >> filterMemPool;
         if (inv.type != MSG_XTHINBLOCK && inv.type != MSG_THINBLOCK) {
             LOCK(cs_main);
-            Misbehaving(pfrom->GetId(), 20);
+            misbehaving(pfrom->GetId(), 20);
             return false;
         }
 
         LoadFilter(pfrom, &filterMemPool);
         pfrom->vRecvGetData.insert(pfrom->vRecvGetData.end(), inv);
-        ProcessGetData(pfrom, Params().GetConsensus());
+        processGetData(pfrom, Params().GetConsensus());
     }
 }

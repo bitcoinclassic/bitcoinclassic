@@ -31,7 +31,7 @@ namespace Network {
     {
         if (!xthinEnabled) {
             LOCK(cs_main);
-            Misbehaving(pfrom->GetId(), 100);
+            misbehaving(pfrom->GetId(), 100);
             return false;
         }
         if (pfrom->xThinBlockHashes.size() != pfrom->thinBlock.vtx.size()) { // crappy, but fast solution.

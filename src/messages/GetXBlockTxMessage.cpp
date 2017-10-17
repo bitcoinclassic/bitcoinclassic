@@ -31,7 +31,7 @@ namespace Network {
     {
         if (!xthinEnabled) {
             LOCK(cs_main);
-            Misbehaving(pfrom->GetId(), 100);
+            misbehaving(pfrom->GetId(), 100);
             return false;
         }
         CXRequestThinBlockTx thinRequestBlockTx;
@@ -39,7 +39,7 @@ namespace Network {
 
         if (thinRequestBlockTx.setCheapHashesToRequest.empty()) { // empty request??
             LOCK(cs_main);
-            Misbehaving(pfrom->GetId(), 100);
+            misbehaving(pfrom->GetId(), 100);
             return false;
         }
         // We use MSG_TX here even though we refer to blockhash because we need to track
@@ -47,7 +47,7 @@ namespace Network {
         CInv inv(MSG_TX, thinRequestBlockTx.blockhash);
         LogPrint("thin", "received get_xblocktx for %s peer=%d\n", inv.hash.ToString(), pfrom->id);
 
-        // Check for Misbehaving and DOS
+        // Check for misbehaving and DOS
         // If they make more than 20 requests in 10 minutes then disconnect them
         {
             const uint64_t nNow = GetTime();
@@ -58,23 +58,23 @@ namespace Network {
             pfrom->nGetXBlockTxCount += 1;
             LogPrint("thin", "nGetXBlockTxCount is %f\n", pfrom->nGetXBlockTxCount);
             if (pfrom->nGetXBlockTxCount >= 20) {
-                LogPrintf("DOS: Misbehaving - requesting too many xblocktx: %s\n", inv.hash.ToString());
+                LogPrintf("DOS: misbehaving - requesting too many xblocktx: %s\n", inv.hash.ToString());
                 LOCK(cs_main);
-                Misbehaving(pfrom->GetId(), 100);  // If they exceed the limit then disconnect them
+                misbehaving(pfrom->GetId(), 100);  // If they exceed the limit then disconnect them
             }
         }
 
         LOCK(cs_main);
         auto mi = Blocks::indexMap.find(inv.hash);
         if (mi == Blocks::indexMap.end()) {
-            Misbehaving(pfrom->GetId(), 100);
+            misbehaving(pfrom->GetId(), 100);
             return false;
         }
         CBlockIndex *index = mi->second;
         assert(index);
         if (index->nHeight + 100 < chainActive.Height()) {
             // a node that is behind should never use this method.
-            Misbehaving(pfrom->GetId(), 10);
+            misbehaving(pfrom->GetId(), 10);
             return false;
         }
         if ((index->nStatus & BLOCK_HAVE_DATA) == 0) {
@@ -99,7 +99,7 @@ namespace Network {
             }
         }
         if (todo > 0) { // node send us a request for transactions which were not in the block.
-            Misbehaving(pfrom->GetId(), 100);
+            misbehaving(pfrom->GetId(), 100);
             return false;
         }
 

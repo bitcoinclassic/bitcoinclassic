@@ -57,29 +57,31 @@ namespace Network {
         friend class CAddrMan;
     };
 
-    bool AcceptBlockHeader(const CBlockHeader &block,
+    bool acceptBlockHeader(const CBlockHeader &block,
                            CValidationState &state,
                            const CChainParams &chainparams,
                            CBlockIndex **ppindex = NULL);
 
-    bool AlreadyHave(const CInv &inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
+    bool alreadyHave(const CInv &inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
-    bool CanDirectFetch(const Consensus::Params &consensusParams);
+    bool canDirectFetch(const Consensus::Params &consensusParams);
 
-    void FindNextBlocksToDownload(NodeId nodeid, unsigned int count, std::vector<CBlockIndex*>& vBlocks, NodeId& nodeStaller);
+    void findNextBlocksToDownload(NodeId nodeid, unsigned int count, std::vector<CBlockIndex *> &vBlocks,
+                                  NodeId &nodeStaller);
 
-    void MarkBlockAsInFlight(NodeId nodeid, const uint256& hash, const Consensus::Params& consensusParams, CBlockIndex *pindex = NULL);
+    void markBlockAsInFlight(NodeId nodeid, const uint256 &hash, const Consensus::Params &consensusParams,
+                             CBlockIndex *pindex = NULL);
 
-    bool MarkBlockAsReceived(const uint256& hash);
+    bool markBlockAsReceived(const uint256 &hash);
 
-    void Misbehaving(NodeId nodeId, int howmuch);
+    void misbehaving(NodeId nodeId, int howmuch);
 
-    bool PeerHasHeader(CNodeState *state, CBlockIndex *pindex);
+    bool peerHasHeader(CNodeState *state, CBlockIndex *pindex);
 
-    void ProcessBlockAvailability(NodeId nodeid);
+    void processBlockAvailability(NodeId nodeid);
 
-    void ProcessGetData(CNode *pfrom, const Consensus::Params &consensusParams);
+    void processGetData(CNode *pfrom, const Consensus::Params &consensusParams);
 
-    void UpdateBlockAvailability(NodeId nodeid, const uint256 &hash);
+    void updateBlockAvailability(NodeId nodeid, const uint256 &hash);
 }
 #endif //BITCOINCLASSIC_NETWORKMESSAGE_H

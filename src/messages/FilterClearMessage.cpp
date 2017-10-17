@@ -31,7 +31,7 @@ namespace Network {
     {
         if (!GetBoolArg("-peerbloomfilters", true)) {
             LOCK(cs_main);
-            Misbehaving(pfrom->GetId(), 100);
+            misbehaving(pfrom->GetId(), 100);
             return false;
         }
         LOCK(pfrom->cs_filter);
