@@ -256,6 +256,13 @@ void UnlinkPrunedFiles(std::set<int>& setFilesToPrune);
 bool GetNodeStateStats(NodeId nodeid, CNodeStateStats &stats);
 
 /** Flush all state, indexes and buffers to disk. */
+enum FlushStateMode {
+    FLUSH_STATE_NONE,
+    FLUSH_STATE_IF_NEEDED,
+    FLUSH_STATE_PERIODIC,
+    FLUSH_STATE_ALWAYS
+};
+bool static FlushStateToDisk(CValidationState &state, FlushStateMode mode);
 void FlushStateToDisk();
 
 CBlockIndex* AddToBlockIndex(const CBlockHeader& block);

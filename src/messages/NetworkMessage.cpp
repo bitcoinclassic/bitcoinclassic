@@ -27,7 +27,7 @@ namespace Network {
     bool acceptBlockHeader(const CBlockHeader &block,
                            CValidationState &state,
                            const CChainParams &chainparams,
-                           CBlockIndex **ppindex = nullptr) {
+                           CBlockIndex **ppindex) {
         AssertLockHeld(cs_main);
         // Check for duplicate
         uint256 hash = block.GetHash();
@@ -93,7 +93,7 @@ namespace Network {
                        pcoinsTip->HaveCoins(inv.hash);
             }
             case MSG_BLOCK:
-                return Blocks::indexMap.count(inv.hash);
+                return static_cast<bool>(Blocks::indexMap.count(inv.hash));
         }
         // Don't know what it is, just say we already got one
         return true;
@@ -215,7 +215,7 @@ namespace Network {
 
     // Requires cs_main.
     void markBlockAsInFlight(NodeId nodeid, const uint256 &hash, const Consensus::Params &consensusParams,
-                             CBlockIndex *pindex = nullptr) {
+                             CBlockIndex *pindex) {
         CNodeState *state = State(nodeid);
         assert(state != nullptr);
 

@@ -60,7 +60,7 @@ namespace Network {
     bool acceptBlockHeader(const CBlockHeader &block,
                            CValidationState &state,
                            const CChainParams &chainparams,
-                           CBlockIndex **ppindex = NULL);
+                           CBlockIndex **ppindex = nullptr);
 
     bool alreadyHave(const CInv &inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
@@ -70,7 +70,7 @@ namespace Network {
                                   NodeId &nodeStaller);
 
     void markBlockAsInFlight(NodeId nodeid, const uint256 &hash, const Consensus::Params &consensusParams,
-                             CBlockIndex *pindex = NULL);
+                             CBlockIndex *pindex = nullptr);
 
     bool markBlockAsReceived(const uint256 &hash);
 
