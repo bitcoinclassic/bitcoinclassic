@@ -144,7 +144,6 @@ namespace Network {
                 misbehaving(pfrom->GetId(), nDoS);
         }
         FlushStateToDisk(state, FLUSH_STATE_PERIODIC);
-
         return true;
     }
 }

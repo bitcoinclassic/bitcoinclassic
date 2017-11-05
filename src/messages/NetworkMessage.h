@@ -34,12 +34,7 @@
 #include <thinblock.h>
 #include <validationinterface.h>
 
-
-static bool CheckIndexAgainstCheckpoint(const CBlockIndex* pindexPrev, CValidationState& state, const CChainParams& chainparams, const uint256& hash);
-
 namespace Network {
-
-    CNodeState *State(NodeId pnode);
 
     class NetworkMessage {
     public:

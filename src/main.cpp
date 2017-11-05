@@ -90,18 +90,14 @@ std::set<int> setDirtyFileInfo;
 // Registration of network node signals.
 //
 
-namespace {
-
-/** Map maintaining per-node state. Requires cs_main. */
-std::map<NodeId, CNodeState> mapNodeState;
-
-// Requires cs_main.
 CNodeState *State(NodeId pnode) {
     std::map<NodeId, CNodeState>::iterator it = mapNodeState.find(pnode);
     if (it == mapNodeState.end())
         return NULL;
     return &it->second;
 }
+
+namespace {
 
 int GetHeight()
 {
@@ -1743,7 +1739,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
  * if they're too large, if it's been a while since the last write,
  * or always and in all cases if we're in prune mode and are deleting files.
  */
-bool static FlushStateToDisk(CValidationState &state, FlushStateMode mode) {
+bool FlushStateToDisk(CValidationState &state, FlushStateMode mode) {
     const CChainParams& chainparams = Params();
     LOCK2(cs_main, cs_LastBlockFile);
     static int64_t nLastWrite = 0;
@@ -2588,7 +2584,7 @@ bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW, bo
     return true;
 }
 
-static bool CheckIndexAgainstCheckpoint(const CBlockIndex* pindexPrev, CValidationState& state, const CChainParams& chainparams, const uint256& hash)
+bool CheckIndexAgainstCheckpoint(const CBlockIndex* pindexPrev, CValidationState& state, const CChainParams& chainparams, const uint256& hash)
 {
     if (*pindexPrev->phashBlock == chainparams.GetConsensus().hashGenesisBlock)
         return true;

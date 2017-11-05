@@ -262,7 +262,7 @@ enum FlushStateMode {
     FLUSH_STATE_PERIODIC,
     FLUSH_STATE_ALWAYS
 };
-bool static FlushStateToDisk(CValidationState &state, FlushStateMode mode);
+bool FlushStateToDisk(CValidationState &state, FlushStateMode mode);
 void FlushStateToDisk();
 
 CBlockIndex* AddToBlockIndex(const CBlockHeader& block);
@@ -720,5 +720,14 @@ std::set<CBlockIndex*> setDirtyBlockIndex;
 
 /** Number of peers from which we're downloading blocks. */
 int nPeersWithValidatedDownloads = 0;
+
+/** Map maintaining per-node state. Requires cs_main. */
+std::map<NodeId, CNodeState> mapNodeState;
+
+// Requires cs_main.
+CNodeState *State(NodeId pnode);
+
+// used in main.cpp:TestBlockValidity and Network::acceptBlockHeader
+bool CheckIndexAgainstCheckpoint(const CBlockIndex* pindexPrev, CValidationState& state, const CChainParams& chainparams, const uint256& hash);
 
 #endif // BITCOIN_MAIN_H
