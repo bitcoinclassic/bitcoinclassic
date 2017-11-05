@@ -23,55 +23,6 @@
 
 namespace Network {
 
-    // Used in main.cpp::AcceptBlock, HeadersMessage
-    bool acceptBlockHeader(const CBlockHeader &block,
-                           CValidationState &state,
-                           const CChainParams &chainparams,
-                           CBlockIndex **ppindex) {
-        AssertLockHeld(cs_main);
-        // Check for duplicate
-        uint256 hash = block.GetHash();
-        auto miSelf = Blocks::indexMap.find(hash);
-        CBlockIndex *pindex = nullptr;
-        if (hash != chainparams.GetConsensus().hashGenesisBlock) {
-
-            if (miSelf != Blocks::indexMap.end()) {
-                // Block header is already known.
-                pindex = miSelf->second;
-                if (ppindex)
-                    *ppindex = pindex;
-                if (pindex->nStatus & BLOCK_FAILED_MASK)
-                    return state.Invalid(error("%s: block is marked invalid", __func__), 0, "duplicate");
-                return true;
-            }
-
-            if (!CheckBlockHeader(block, state))
-                return false;
-
-            // Get prev block index
-            CBlockIndex *pindexPrev = nullptr;
-            auto mi = Blocks::indexMap.find(block.hashPrevBlock);
-            if (mi == Blocks::indexMap.end())
-                return state.DoS(10, error("%s: prev block not found", __func__), 0, "bad-prevblk");
-            pindexPrev = (*mi).second;
-            if (pindexPrev->nStatus & BLOCK_FAILED_MASK)
-                return state.DoS(100, error("%s: prev block invalid", __func__), REJECT_INVALID, "bad-prevblk");
-
-            assert(pindexPrev);
-            if (fCheckpointsEnabled && !CheckIndexAgainstCheckpoint(pindexPrev, state, chainparams, hash))
-                return error("%s: CheckIndexAgainstCheckpoint(): %s", __func__, state.GetRejectReason().c_str());
-
-            if (!ContextualCheckBlockHeader(block, state, pindexPrev))
-                return false;
-        }
-        if (pindex == nullptr)
-            pindex = AddToBlockIndex(block);
-
-        if (ppindex)
-            *ppindex = pindex;
-
-        return true;
-    }
 
     // Used in InvMesssage, TxMessage and XThinBlockMessage
     bool alreadyHave(const CInv &inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main) {

@@ -727,7 +727,8 @@ std::map<NodeId, CNodeState> mapNodeState;
 // Requires cs_main.
 CNodeState *State(NodeId pnode);
 
-// used in main.cpp:TestBlockValidity and Network::acceptBlockHeader
-bool CheckIndexAgainstCheckpoint(const CBlockIndex* pindexPrev, CValidationState& state, const CChainParams& chainparams, const uint256& hash);
-
+bool acceptBlockHeader(const CBlockHeader &block,
+                       CValidationState &state,
+                       const CChainParams &chainparams,
+                       CBlockIndex **ppindex = nullptr);
 #endif // BITCOIN_MAIN_H

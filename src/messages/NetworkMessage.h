@@ -52,11 +52,6 @@ namespace Network {
         friend class CAddrMan;
     };
 
-    bool acceptBlockHeader(const CBlockHeader &block,
-                           CValidationState &state,
-                           const CChainParams &chainparams,
-                           CBlockIndex **ppindex = nullptr);
-
     bool alreadyHave(const CInv &inv) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
     bool canDirectFetch(const Consensus::Params &consensusParams);
