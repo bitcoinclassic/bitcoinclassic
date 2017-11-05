@@ -21,6 +21,8 @@
 
 #include "TxMessage.h"
 
+bool FlushStateToDisk(CValidationState &state, FlushStateMode mode);
+
 namespace Network {
     bool TxMessage::handle(CNode *const pfrom,
                            CDataStream &vRecv,

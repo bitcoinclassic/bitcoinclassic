@@ -262,7 +262,6 @@ enum FlushStateMode {
     FLUSH_STATE_PERIODIC,
     FLUSH_STATE_ALWAYS
 };
-bool FlushStateToDisk(CValidationState &state, FlushStateMode mode);
 void FlushStateToDisk();
 
 CBlockIndex* AddToBlockIndex(const CBlockHeader& block);
