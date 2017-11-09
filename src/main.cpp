@@ -3545,7 +3545,6 @@ std::string GetWarnings(const std::string& strFor)
 
 bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vRecv, int64_t nTimeReceived)
 {
-    const CChainParams& chainparams = Params();
     RandAddSeedPerfmon();
     const bool fReindex = Blocks::DB::instance()->isReindexing();
     logDebug(Log::Net) << "received:" << SanitizeString(strCommand) << "bytes:" << vRecv.size() << "peer:" << pfrom->id;
@@ -3627,11 +3626,13 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
     } else {
         // Ignore unknown commands for extensibility
         logDebug(Log::Net) << "Unknown command" << SanitizeString(strCommand) << "from peer:" << pfrom->id;
+    }
+
+    if (networkMessage != nullptr && !networkMessage->handle(pfrom, vRecv, nTimeReceived, strCommand, xthinEnabled, fReindex)) {
         return false;
     }
 
-    // FIX-ME: Perhaps a try/catch here according to Ticket 224 description by @zander
-    return networkMessage->handle(pfrom, vRecv, nTimeReceived, strCommand, xthinEnabled, fReindex);
+    return true;
 }
 
 // requires LOCK(cs_vRecvMsg)

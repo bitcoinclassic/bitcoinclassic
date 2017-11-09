@@ -46,5 +46,6 @@ namespace Network {
         LoadFilter(pfrom, &filterMemPool);
         pfrom->vRecvGetData.insert(pfrom->vRecvGetData.end(), inv);
         processGetData(pfrom, Params().GetConsensus());
+        return true;
     }
 }

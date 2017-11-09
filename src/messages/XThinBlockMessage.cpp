@@ -65,5 +65,7 @@ namespace Network {
             if (thinBlock.process(pfrom))
                 HandleBlockMessage(pfrom, strCommand, pfrom->thinBlock, thinBlock.GetInv());  // clears the thin block
         }
+
+        return true;
     }
 }
