@@ -3627,7 +3627,7 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
     } else {
         // Ignore unknown commands for extensibility
         logDebug(Log::Net) << "Unknown command" << SanitizeString(strCommand) << "from peer:" << pfrom->id;
-        return false;q
+        return false;
     }
 
     // FIX-ME: Perhaps a try/catch here according to Ticket 224 description by @zander
