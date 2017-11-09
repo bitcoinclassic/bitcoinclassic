@@ -10,6 +10,7 @@
 #include "serialize.h"
 #include "uint256.h"
 #include "primitives/block.h"
+#include "messages/NetworkMessage.h"
 #include "bloom.h"
 
 #include "net.h"

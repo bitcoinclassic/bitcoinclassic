@@ -147,7 +147,7 @@ bool CXThinBlock::process(CNode* pfrom)
                 blockSize, blockSizeAcceptLimit, score, pfrom->id);
         pfrom->mapThinBlocksInFlight.erase(pfrom->thinBlock.GetHash());
         LOCK(cs_main);
-        Misbehaving(pfrom->id, score);
+        Network::misbehaving(pfrom->id, score);
         return false;
     }
 
@@ -271,7 +271,7 @@ void LoadFilter(CNode *pfrom, CBloomFilter *filter)
     if (!filter->IsWithinSizeConstraints()) {
         // There is no excuse for sending a too-large filter
         LOCK(cs_main);
-        Misbehaving(pfrom->GetId(), 100);
+        Network::misbehaving(pfrom->GetId(), 100);
     } else {
         LOCK(pfrom->cs_filter);
         delete pfrom->pThinBlockFilter;
@@ -300,7 +300,7 @@ void HandleBlockMessage(CNode *pfrom, const std::string &strCommand, const CBloc
                            state.GetRejectReason().substr(0, MAX_REJECT_MESSAGE_LENGTH), inv.hash);
         if (nDoS > 0) {
             LOCK(cs_main);
-            Misbehaving(pfrom->GetId(), nDoS);
+            Network::misbehaving(pfrom->GetId(), nDoS);
         }
     }
     LogPrint("thin", "Processed Block %s in %.2f seconds\n", inv.hash.ToString(), (double)(GetTimeMicros() - startTime) / 1000000.0);
@@ -526,7 +526,7 @@ void HandleExpeditedBlock(CDataStream& vRecv, CNode* pfrom)
         CValidationState state;
         if (!CheckBlockHeader(thinBlock.header, state, true)) { // block header is bad
             LOCK(cs_main);
-            Misbehaving(pfrom->id, 100);
+            Network::misbehaving(pfrom->id, 100);
             return;
         }
         // TODO:  Start optimistic mining now
